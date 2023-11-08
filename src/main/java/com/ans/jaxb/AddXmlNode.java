@@ -47,6 +47,7 @@ import org.controlsfx.control.CheckListView;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import com.spire.xls.CellRange;
@@ -230,17 +231,25 @@ public class AddXmlNode extends Application {
 		final Stage taskUpdateStage = new Stage(StageStyle.UNDECORATED);
 		taskUpdateStage.setScene(new Scene(updatePane, 170, 170));
 		// End progressBar
+
 		final ImageView imgView = new ImageView("UIControls/multiple_files.png");
 		imgView.setFitWidth(20);
 		imgView.setFitHeight(20);
-		final Menu file = new Menu("Fichier");
+
+		final ImageView imgValid = new ImageView("UIControls/check.jpg");
+		imgValid.setFitWidth(20);
+		imgValid.setFitHeight(20);
+
+		final Menu file = new Menu(Constante.openFile);
 		file.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-		final MenuItem item = new MenuItem("Ouvrir Fichiers", imgView);
+		final MenuItem item = new MenuItem(Constante.openToFile, imgView);
+		final MenuItem item1 = new MenuItem(Constante.validateFile, imgValid);
 		item.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-		file.getItems().addAll(item);
+		item1.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		file.getItems().addAll(item, item1);
 		// Creating a File chooser
 		final FileChooser fileChooser = new FileChooser();
-		fileChooser.setTitle("Choix fichiers");
+		fileChooser.setTitle(Constante.chooseFile);
 		fileChooser.getExtensionFilters()
 				.addAll(new ExtensionFilter("ALL Files", "*.xml*", "*.xlsx*", "*.xlsm*", "*.rdf*"));
 		files = new ArrayList<File>();
@@ -290,6 +299,46 @@ public class AddXmlNode extends Application {
 							setText(employee == null ? "" : String.format(employee.getAbsolutePath()));
 						}
 					});
+				}
+			}
+		});
+
+		// Adding action on the menu item1
+		item1.setOnAction(new EventHandler<ActionEvent>() {
+			public void handle(ActionEvent event) {
+				// Opening a dialog box
+				final List<File> file = fileChooser.showOpenMultipleDialog(stage);
+				final List<File> fileMalFormed = new ArrayList<File>();
+				if (file != null) {
+					for (int i = 0; i < file.size(); i++) {
+						try {
+							final DocumentBuilderFactory dBF = DocumentBuilderFactory.newInstance();
+							final DocumentBuilder builder = dBF.newDocumentBuilder();
+							final InputSource is = new InputSource(file.get(i).getAbsolutePath());
+							builder.parse(is);
+						} catch (final Exception e) {
+							System.out.println(file.get(i).getAbsolutePath() + "n'est pas bien formé!");
+							fileMalFormed.add(file.get(i));
+						}
+					}
+					
+					String name = "";
+					for (int i = 0; i < fileMalFormed.size(); i++) {
+						name = name + '\n' + fileMalFormed.get(i).getName();
+					}
+					final Alert alert = new Alert(AlertType.ERROR);
+					final DialogPane dialogPane = alert.getDialogPane();
+					dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+					dialogPane.getStyleClass().add("myDialog");
+					dialogPane.setMinHeight(200 * fileMalFormed.size()/2);
+					dialogPane.setMaxHeight(200 * fileMalFormed.size()/2);
+					dialogPane.setPrefHeight(200 * fileMalFormed.size()/2);
+					alert.setContentText(Constante.alert10 + '\n' + name);
+					alert.setHeaderText(null);
+					alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+					alert.showAndWait();
+					
+					
 				}
 			}
 		});
@@ -956,10 +1005,15 @@ public class AddXmlNode extends Application {
 
 							} catch (final FileNotFoundException e) {
 								e.printStackTrace();
+								init(file);
+
 							} catch (final IOException e) {
 								e.printStackTrace();
+								init(file);
+
 							} catch (final SAXException e) {
 								e.printStackTrace();
+								init(file);
 							}
 						}
 					}
@@ -1800,6 +1854,33 @@ public class AddXmlNode extends Application {
 
 		return success;
 
+	}
+
+	/**
+	 * initialize
+	 * 
+	 * @param file
+	 */
+	public void init(final File file) {
+		final Alert alert = new Alert(AlertType.ERROR);
+		final DialogPane dialogPane = alert.getDialogPane();
+		dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+		dialogPane.getStyleClass().add("myDialog");
+		dialogPane.setMinHeight(150);
+		dialogPane.setMaxHeight(150);
+		dialogPane.setPrefHeight(150);
+		alert.setContentText(Constante.alert9 + "\n" + file.getName());
+		alert.setHeaderText(null);
+		alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+		alert.showAndWait();
+		files = new ArrayList<File>();
+		filesB = new ArrayList<File>();
+		finalFiles = new ArrayList<File>();
+		list.getItems().clear();
+		listB.getItems().clear();
+		list.getCheckModel().clearChecks();
+		listB.getCheckModel().clearChecks();
+		selectAll.setSelected(false);
 	}
 
 	/**

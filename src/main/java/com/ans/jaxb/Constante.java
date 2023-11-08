@@ -16,6 +16,14 @@ public class Constante {
 	public static final String buttonTermino = "Mise à jour Terminologies";
 
 	public static final String button2 = "Ouvrir le fichier AD généré";
+	
+	public static final String openFile = "Fichier";
+	
+	public static final String openToFile = "Ouvrir Fichiers";
+	
+	public static final String validateFile = "Valider Fichiers JDV";
+	
+	public static final String chooseFile = "Choix fichiers";
 
 	public static final String button4 = "Arborescence Fichier AD généré";
 
@@ -58,6 +66,10 @@ public class Constante {
 	public static final String alert4 = "Veuillez choisir au moins un fichier XML";
 
 	public static final String alert8 = "Veuillez choisir au moins un fichier RDF";
+	
+	public static final String alert9 = "Erreur de traitement";
+	
+	public static final String alert10 = "Fichiers mal formatés :";
 
 	public static final String alert2 = "Traitement terminé avec succès";
 
