@@ -321,24 +321,37 @@ public class AddXmlNode extends Application {
 							fileMalFormed.add(file.get(i));
 						}
 					}
-					
-					String name = "";
-					for (int i = 0; i < fileMalFormed.size(); i++) {
-						name = name + '\n' + fileMalFormed.get(i).getName();
+
+					if (fileMalFormed.size() > 0) {
+						String name = "";
+						for (int i = 0; i < fileMalFormed.size(); i++) {
+							name = name + '\n' + fileMalFormed.get(i).getName();
+						}
+						final Alert alert = new Alert(AlertType.ERROR);
+						final DialogPane dialogPane = alert.getDialogPane();
+						dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+						dialogPane.getStyleClass().add("myDialog");
+						dialogPane.setMinHeight(200 * fileMalFormed.size() / 2);
+						dialogPane.setMaxHeight(200 * fileMalFormed.size() / 2);
+						dialogPane.setPrefHeight(200 * fileMalFormed.size() / 2);
+						alert.setContentText(Constante.alert10 + '\n' + name);
+						alert.setHeaderText(null);
+						alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+						alert.showAndWait();
+					} else {
+						final Alert alert = new Alert(AlertType.INFORMATION);
+						final DialogPane dialogPane = alert.getDialogPane();
+						dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+						dialogPane.getStyleClass().add("myDialog");
+						dialogPane.setMinHeight(130);
+						dialogPane.setMaxHeight(130);
+						dialogPane.setPrefHeight(130);
+						alert.setContentText(Constante.alert11);
+						alert.setHeaderText(null);
+						alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+						alert.showAndWait();
 					}
-					final Alert alert = new Alert(AlertType.ERROR);
-					final DialogPane dialogPane = alert.getDialogPane();
-					dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-					dialogPane.getStyleClass().add("myDialog");
-					dialogPane.setMinHeight(200 * fileMalFormed.size()/2);
-					dialogPane.setMaxHeight(200 * fileMalFormed.size()/2);
-					dialogPane.setPrefHeight(200 * fileMalFormed.size()/2);
-					alert.setContentText(Constante.alert10 + '\n' + name);
-					alert.setHeaderText(null);
-					alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-					alert.showAndWait();
-					
-					
+
 				}
 			}
 		});

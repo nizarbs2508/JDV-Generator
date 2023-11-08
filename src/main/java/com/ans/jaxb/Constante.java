@@ -70,6 +70,8 @@ public class Constante {
 	public static final String alert9 = "Erreur de traitement";
 	
 	public static final String alert10 = "Fichiers mal formatés :";
+	
+	public static final String alert11 = "Tous les fichiers sont bien formatés";
 
 	public static final String alert2 = "Traitement terminé avec succès";
 
