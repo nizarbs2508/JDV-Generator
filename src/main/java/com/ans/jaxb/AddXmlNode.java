@@ -4,20 +4,22 @@ import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
@@ -84,6 +86,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.image.Image;
@@ -173,6 +176,10 @@ public class AddXmlNode extends Application {
 	 * width
 	 */
 	int width = (int) size.getWidth();
+	/**
+	 * primaryStage
+	 */
+	public Stage primaryStage = new Stage();
 
 	/**
 	 * loading in api
@@ -240,6 +247,10 @@ public class AddXmlNode extends Application {
 		imgValid.setFitWidth(20);
 		imgValid.setFitHeight(20);
 
+		final ImageView imgRead = new ImageView("UIControls/lisezmoi.png");
+		imgRead.setFitWidth(20);
+		imgRead.setFitHeight(20);
+
 		final Menu file = new Menu(Constante.openFile);
 		file.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 		final MenuItem item = new MenuItem(Constante.openToFile, imgView);
@@ -247,6 +258,13 @@ public class AddXmlNode extends Application {
 		item.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 		item1.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 		file.getItems().addAll(item, item1);
+
+		final Menu apropos = new Menu(Constante.apropos);
+		apropos.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		final MenuItem item2 = new MenuItem(Constante.lisezmoi, imgRead);
+		item2.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		apropos.getItems().addAll(item2);
+
 		// Creating a File chooser
 		final FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle(Constante.chooseFile);
@@ -317,7 +335,6 @@ public class AddXmlNode extends Application {
 							final InputSource is = new InputSource(file.get(i).getAbsolutePath());
 							builder.parse(is);
 						} catch (final Exception e) {
-							System.out.println(file.get(i).getAbsolutePath() + "n'est pas bien formé!");
 							fileMalFormed.add(file.get(i));
 						}
 					}
@@ -331,9 +348,9 @@ public class AddXmlNode extends Application {
 						final DialogPane dialogPane = alert.getDialogPane();
 						dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
 						dialogPane.getStyleClass().add("myDialog");
-						dialogPane.setMinHeight(200 * fileMalFormed.size() / 2);
-						dialogPane.setMaxHeight(200 * fileMalFormed.size() / 2);
-						dialogPane.setPrefHeight(200 * fileMalFormed.size() / 2);
+						dialogPane.setMinHeight(120 * fileMalFormed.size());
+						dialogPane.setMaxHeight(120 * fileMalFormed.size());
+						dialogPane.setPrefHeight(120 * fileMalFormed.size());
 						alert.setContentText(Constante.alert10 + '\n' + name);
 						alert.setHeaderText(null);
 						alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
@@ -351,13 +368,42 @@ public class AddXmlNode extends Application {
 						alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
 						alert.showAndWait();
 					}
-
 				}
 			}
 		});
 
+		// Adding action on the menu item2
+		item2.setOnAction(new EventHandler<ActionEvent>() {
+			public void handle(ActionEvent event) {
+				Platform.runLater(() -> {
+					final File file = new File(getClass().getResource("/Lisez-moi.md").getFile());
+					VBox root = new VBox();
+					root.setPadding(new Insets(10));
+					root.setSpacing(5);
+					TextArea textArea = new TextArea();
+					textArea.setEditable(false);
+					textArea.setPrefHeight(Integer.MAX_VALUE);
+					textArea.setPrefWidth(Integer.MAX_VALUE);
+					textArea.setStyle("-fx-background-color: #A9A9A9;");
+					textArea.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+					try {
+						textArea.setText(readFileContents(file));
+						root.getChildren().add(textArea);
+						Scene scene = new Scene(root);
+						primaryStage.setTitle(Constante.lisezmoi);
+						primaryStage.setScene(scene);
+						primaryStage.setMaximized(true);
+						primaryStage.show();
+					} catch (final IOException e) {
+						e.printStackTrace();
+					}
+
+				});
+			}
+		});
+
 		// Creating a menu bar and adding menu to it.
-		final MenuBar menuBar = new MenuBar(file);
+		final MenuBar menuBar = new MenuBar(file, apropos);
 		final Button button1 = new Button(Constante.button1);
 		final Button button10 = new Button(Constante.button10);
 		final Button buttonDownload = new Button(Constante.buttonDownload);
@@ -592,7 +638,6 @@ public class AddXmlNode extends Application {
 					if (!files.isEmpty() && getExtension(files.get(0).getAbsolutePath()).equals(Constante.rdf)) {
 						runTask(taskUpdateStage, progress);
 						Platform.runLater(() -> {
-							downloadFile(null, null, null, null);
 							Document doc = null;
 							for (File file : files) {
 								List<String> listStr = new ArrayList<String>();
@@ -1347,6 +1392,11 @@ public class AddXmlNode extends Application {
 						secondStage.close();
 					}
 				}
+				if (primaryStage != null) {
+					if (primaryStage.isShowing()) {
+						primaryStage.close();
+					}
+				}
 			}
 		});
 
@@ -1421,6 +1471,11 @@ public class AddXmlNode extends Application {
 					item.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					imageView.setFitWidth(120);
 					imageView.setFitHeight(120);
+					file.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					item.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					item1.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					apropos.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					item2.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 
 				}
 				if (newSceneWidth.doubleValue() >= 1632 && newSceneWidth.doubleValue() >= 1728) { // ecran 17 pouces
@@ -1490,6 +1545,11 @@ public class AddXmlNode extends Application {
 					item.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					imageView.setFitWidth(140);
 					imageView.setFitHeight(140);
+					file.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					item.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					item1.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					apropos.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					item2.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
 
 				} else if (newSceneWidth.doubleValue() < 1509) {
 					button1.setStyle(
@@ -1558,6 +1618,11 @@ public class AddXmlNode extends Application {
 					item.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					imageView.setFitWidth(100);
 					imageView.setFitHeight(100);
+					file.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					item.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					item1.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					apropos.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					item2.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
 				}
 				System.out.println(newSceneWidth.doubleValue());
 			}
@@ -1816,59 +1881,6 @@ public class AddXmlNode extends Application {
 		}
 	}
 
-	private boolean downloadFile(String url, String username, String password, String fileName) {
-		boolean success = true;
-		InputStream in = null;
-		FileOutputStream out = null;
-		try {
-			url = "https://smt.esante.gouv.fr/wp-json/ans/terminologies/document?terminologyId=terminologie-ccam&amp;fileName=CGTS_SEM_CCAM_Fiche-detaillee.pdf";
-			URL myUrl = new URL(url);
-			HttpURLConnection conn = (HttpURLConnection) myUrl.openConnection();
-			conn.setDoOutput(true);
-			conn.setReadTimeout(30000);
-			conn.setConnectTimeout(30000);
-			conn.setUseCaches(false);
-			conn.setAllowUserInteraction(false);
-			conn.setRequestProperty("Content-Type", "application/json");
-			conn.setRequestProperty("Accept-Charset", "UTF-8");
-			conn.setRequestMethod("GET");
-			username = "nizar.bensalem.ext@esante.gouv.fr";
-			password = "Chnanah000";
-			fileName = "c:\\JDV\\output\\test.pdf";
-			String userCredentials = username.trim() + ":" + password.trim();
-			String basicAuth = "Basic " + new String(userCredentials);
-			conn.setRequestProperty("Authorization", basicAuth);
-
-			in = conn.getInputStream();
-			out = new FileOutputStream(fileName);
-			int c;
-			byte[] b = new byte[1024];
-			while ((c = in.read(b)) != -1)
-				out.write(b, 0, c);
-
-		}
-
-		catch (Exception ex) {
-			success = false;
-		}
-
-		finally {
-			if (in != null)
-				try {
-					in.close();
-				} catch (IOException e) {
-				}
-			if (out != null)
-				try {
-					out.close();
-				} catch (IOException e) {
-				}
-		}
-
-		return success;
-
-	}
-
 	/**
 	 * initialize
 	 * 
@@ -1894,6 +1906,31 @@ public class AddXmlNode extends Application {
 		list.getCheckModel().clearChecks();
 		listB.getCheckModel().clearChecks();
 		selectAll.setSelected(false);
+	}
+
+	/**
+	 * readFileContents
+	 * 
+	 * @param selectedFile
+	 * @throws IOException
+	 */
+	private String readFileContents(final File file) throws IOException {
+		final BufferedReader br = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8));
+		String singleString = null;
+
+		try {
+			final StringBuilder sb = new StringBuilder();
+			String line = br.readLine();
+			while (line != null) {
+				sb.append(line);
+				sb.append("\n");
+				line = br.readLine();
+			}
+			singleString = sb.toString();
+		} finally {
+			br.close();
+		}
+		return singleString;
 	}
 
 	/**

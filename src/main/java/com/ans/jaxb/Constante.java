@@ -19,7 +19,11 @@ public class Constante {
 	
 	public static final String openFile = "Fichier";
 	
+	public static final String apropos = "À propos";
+	
 	public static final String openToFile = "Ouvrir Fichiers";
+	
+	public static final String lisezmoi = "Lisez-moi";
 	
 	public static final String validateFile = "Valider Fichiers JDV";
 	
