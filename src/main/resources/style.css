@@ -3,14 +3,11 @@
 	-default-background-color: #414141;
 	-default-background-color-focused: #373737;
 	-default-background-color-hover: #4b4b4b;
-	-fx-font-family: Roboto-Regular;
-	-fx-font-size: 16px;
 }
 
 .styled-text-area {
 	-fx-background-color: #A9A9A9;
 	-fx-display-caret: true;
-	-fx-font-size: 22;
 }
 
 .styled-text-area .text {
@@ -18,7 +15,6 @@
 }
 
 .lineno {
-	-fx-font-size: 22;
 	-fx-background-color: #d7d2d4;
 	-fx-fill: #232323;
 }
@@ -66,56 +62,46 @@
 }
 
 .menu-bar {
-	-fx-background-color: -default-background-color;
+	-fx-background-color: #f2f2f2;
 	-fx-min-height: 30px;
 }
 
 
 #menuBarRegion {
 	-fx-background-color: -default-background-color;
-}
-
-.context-menu {
-	-fx-background-color: -default-background-color;
+	
 }
 
 .menu-item {
 	-fx-padding: 10 20 10;
+	-fx-text-fill: black;
 }
 
 .menu-item:focused {
-	-fx-background-color: -default-background-color-focused;
+	-fx-background-color: white;
 	-fx-padding: 10 20 10;
 }
 
+.menu-item:focused .label {
+	-fx-text-fill: blue;
+}
+
 .menu .label {
-	-fx-font-size: 14px;
-	-fx-text-fill: -font-color;
+	-fx-text-fill: black;
 }
 
 .menu:hover {
-	-fx-background-color: -default-background-color-hover;
+	-fx-background-color: white;
 }
 
-/* the menu item when it's selected */
-.menu-bar>.container>.menu-button:showing {
-	-fx-background-color: -default-background-color-focused;
+.menu-item .label {
+	-fx-text-fill: black;
 }
-
 
 .menu-item:hover {
-	-fx-background-color: #4b4b4b;
-	;
+	-fx-background-color: white;
 }
 
-/* the area around menu-item */
-
-.context-menu {
-	-fx-background-color: -default-background-color;
-	-fx-background-insets: 0, 1, 2;
-	-fx-background-radius: 0 6 6 6, 0 5 5 5, 0 4 4 4;
-	-fx-padding: 0.333333em 0.083333em 0.666667em 0.083333em;
-}
 
 .tab {
 	-fx-pref-height: 40;
@@ -123,8 +109,6 @@
 
 .tab-label {
 	-fx-text-fill: -default-background-color;
-	-fx-font-size: 16px;
-	-fx-font-family: Roboto-Regular;
 }
 
 .tab:selected .tab-label {
@@ -166,7 +150,6 @@
 }
 
 .myDialog>*.label.content {
-	-fx-font-size: 14px;
 	-fx-font-family: Verdana, Tahoma, sans-serif;
 }
 
@@ -174,7 +157,6 @@
 	-fx-background-color: yellow;
 	-fx-background-radius: 10px;
 	-fx-text-fill: black;
-	-fx-font-size: 15.0px;
 	-fx-wrap-text: true;
 	-fx-text-fill: white;
 }
@@ -182,31 +164,15 @@
 .stack-pane {
 	-fx-background-radius: 10px;
 	-fx-text-fill: black;
-	-fx-font-size: 16;
 	-fx-wrap-text: true;
 	-fx-border-color: #98bb68;
 	-fx-font-family: Verdana, Tahoma, sans-serif;
 	-fx-background-color: white;
 }
 
-.menu-item .label {
-	-fx-text-fill: black;
-}
-
-.menu .label {
-	-fx-font-family: Verdana, Tahoma, sans-serif;
-}
-
-.menu-item:focused {
-	-fx-background-color: white;
-}
-
-.menu-item:focused .label {
-	-fx-text-fill: blue;
-}
 
 .context-menu {
-	-fx-background-color: white;
+	-fx-background-color: #f2f2f2;
 	-fx-background-insets: 0, 1, 2;
 	-fx-background-radius: 0 6 6 6, 0 5 5 5, 0 4 4 4;
 	-fx-padding: 0.333333em 0.083333em 0.666667em 0.083333em;
@@ -276,6 +242,5 @@
 }
 
 .text-area .content {
-   -fx-background-color: beige ;
+	-fx-background-color: #E6E6E6;
 }
-
