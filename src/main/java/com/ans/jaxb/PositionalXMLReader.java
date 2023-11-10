@@ -40,7 +40,7 @@ public class PositionalXMLReader {
 	
 	protected static final String ELEMENT_ID = "elementId";
 
-    public static Document readXML(final InputStream is) throws IOException, SAXException {
+    public Document readXML(final InputStream is) throws IOException, SAXException {
         final Document doc;
         SAXParser parser;
         try {

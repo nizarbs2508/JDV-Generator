@@ -85,6 +85,7 @@ import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -243,6 +244,10 @@ public class AddXmlNode extends Application {
 		imgView.setFitWidth(20);
 		imgView.setFitHeight(20);
 
+		final ImageView imgViewM = new ImageView("UIControls/macro.jpg");
+		imgViewM.setFitWidth(20);
+		imgViewM.setFitHeight(20);
+
 		final ImageView imgValid = new ImageView("UIControls/check.jpg");
 		imgValid.setFitWidth(20);
 		imgValid.setFitHeight(20);
@@ -251,13 +256,23 @@ public class AddXmlNode extends Application {
 		imgRead.setFitWidth(20);
 		imgRead.setFitHeight(20);
 
+		final ImageView imgExit = new ImageView("UIControls/exit.png");
+		imgExit.setFitWidth(20);
+		imgExit.setFitHeight(20);
+
 		final Menu file = new Menu(Constante.openFile);
 		file.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 		final MenuItem item = new MenuItem(Constante.openToFile, imgView);
 		final MenuItem item1 = new MenuItem(Constante.validateFile, imgValid);
-		item.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		final MenuItem item3 = new MenuItem(Constante.exit, imgExit);
 		item1.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-		file.getItems().addAll(item, item1);
+		item.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		item3.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		file.getItems().addAll(item, item1, item3);
+		// Creating separator menu items
+		SeparatorMenuItem sep = new SeparatorMenuItem();
+		// Adding separator objects to menu
+		file.getItems().add(2, sep);
 
 		final Menu apropos = new Menu(Constante.apropos);
 		apropos.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
@@ -318,6 +333,23 @@ public class AddXmlNode extends Application {
 						}
 					});
 				}
+			}
+		});
+
+		// Adding action on the menu item3
+		item3.setOnAction(new EventHandler<ActionEvent>() {
+			public void handle(ActionEvent event) {
+				if (secondStage != null) {
+					if (secondStage.isShowing()) {
+						secondStage.close();
+					}
+				}
+				if (primaryStage != null) {
+					if (primaryStage.isShowing()) {
+						primaryStage.close();
+					}
+				}
+				stage.close();
 			}
 		});
 
@@ -402,12 +434,40 @@ public class AddXmlNode extends Application {
 			}
 		});
 
+		final ImageView imgViewA = new ImageView("UIControls/art-decor.png");
+		imgViewA.setFitWidth(20);
+		imgViewA.setFitHeight(20);
+
+		final ImageView imgViewO = new ImageView("UIControls/oxygen.png");
+		imgViewO.setFitWidth(20);
+		imgViewO.setFitHeight(20);
+
+		final ImageView imgViewT = new ImageView("UIControls/tree.png");
+		imgViewT.setFitWidth(20);
+		imgViewT.setFitHeight(20);
+
+		final ImageView imgViewR = new ImageView("UIControls/rdf.png");
+		imgViewR.setFitWidth(20);
+		imgViewR.setFitHeight(20);
+		
+		final ImageView imgViewI = new ImageView("UIControls/reinitialiser.png");
+		imgViewI.setFitWidth(20);
+		imgViewI.setFitHeight(20);
+		
+		
+		
+
 		// Creating a menu bar and adding menu to it.
 		final MenuBar menuBar = new MenuBar(file, apropos);
-		final Button button1 = new Button(Constante.button1);
-		final Button button10 = new Button(Constante.button10);
-		final Button buttonDownload = new Button(Constante.buttonDownload);
-		final Button buttonTermino = new Button(Constante.buttonTermino);
+		final Button button1 = new Button(Constante.button1, imgViewA);
+		final Button button10 = new Button(Constante.button10, imgViewM);
+
+		final ImageView imgViewD = new ImageView("UIControls/download.png");
+		imgViewD.setFitWidth(20);
+		imgViewD.setFitHeight(20);
+
+		final Button buttonDownload = new Button(Constante.buttonDownload, imgViewD);
+		final Button buttonTermino = new Button(Constante.buttonTermino, imgViewR);
 
 		final Image ansImage = new Image(AddXmlNode.class.getResource("/ans01.jpg").toExternalForm());
 		// creating ImageView for adding image
@@ -421,7 +481,7 @@ public class AddXmlNode extends Application {
 		// creating HBox to add imageview
 		final HBox hBoxImg = new HBox();
 		hBoxImg.getChildren().addAll(imageView);
-		hBoxImg.setStyle("-fx-background-color: white;");
+		hBoxImg.setStyle("-fx-background-color: white;-fx-border-color: #98bb68; -fx-border-radius: 5;");
 
 		final Region spacer1 = new Region();
 		spacer1.setMaxWidth(10);
@@ -467,11 +527,11 @@ public class AddXmlNode extends Application {
 		spacer12.setMaxWidth(10);
 		HBox.setHgrow(spacer12, Priority.ALWAYS);
 
-		final Button button2 = new Button(Constante.button2);
+		final Button button2 = new Button(Constante.button2, imgViewO);
 
-		final Button button4 = new Button(Constante.button4);
+		final Button button4 = new Button(Constante.button4, imgViewT);
 
-		final Button button3 = new Button(Constante.button3);
+		final Button button3 = new Button(Constante.button3, imgViewI);
 
 		final Region spacer15 = new Region();
 		spacer15.setMaxWidth(10);
@@ -497,7 +557,8 @@ public class AddXmlNode extends Application {
 		LocalDateTime localDateTime = LocalDateTime.of(2021, Month.MARCH, 15, 00, 00, 00);
 		picker.setDateTimeValue(localDateTime);
 		picker.setPrefWidth(190);
-		picker.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		picker.setStyle(
+				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
 		picker.setEditable(false);
 
 		final Label label1 = new Label();
@@ -512,7 +573,8 @@ public class AddXmlNode extends Application {
 		comboBox.getSelectionModel().select(0);
 		comboBox.setPadding(new Insets(5, 5, 5, 5));
 		comboBox.setPrefWidth(140);
-		comboBox.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		comboBox.setStyle(
+				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
 		comboBox.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
 
 		final Label label2 = new Label();
@@ -524,7 +586,8 @@ public class AddXmlNode extends Application {
 		textField2.setText(Constante.textField2);
 		textField2.setPrefWidth(40);
 		textField2.setPadding(new Insets(5, 5, 5, 5));
-		textField2.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		textField2.setStyle(
+				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
 
 		final Label labelL = new Label();
 		labelL.setText(Constante.labelL);
@@ -535,7 +598,8 @@ public class AddXmlNode extends Application {
 		textFieldL.setPadding(new Insets(5, 5, 5, 5));
 		textFieldL.setText(Constante.textFieldL);
 		textFieldL.setPrefWidth(40);
-		textFieldL.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		textFieldL.setStyle(
+				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
 
 		final Label labelT = new Label();
 		labelT.setText(Constante.labelT);
@@ -546,7 +610,8 @@ public class AddXmlNode extends Application {
 		textFieldT.setPadding(new Insets(5, 5, 5, 5));
 		textFieldT.setText(Constante.textFieldT);
 		textFieldT.setPrefWidth(40);
-		textFieldT.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		textFieldT.setStyle(
+				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
 
 		final Label labelP = new Label();
 		labelP.setText(Constante.labelP);
@@ -557,7 +622,8 @@ public class AddXmlNode extends Application {
 		textFieldP.setPadding(new Insets(5, 5, 5, 5));
 		textFieldP.setText(Constante.textFieldP);
 		textFieldP.setPrefWidth(180);
-		textFieldP.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		textFieldP.setStyle(
+				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
 
 		final Label labelPS = new Label();
 		labelPS.setText(Constante.labelPS);
@@ -568,7 +634,8 @@ public class AddXmlNode extends Application {
 		textFieldPS.setPadding(new Insets(5, 5, 5, 5));
 		textFieldPS.setText(Constante.textFieldPS);
 		textFieldPS.setPrefWidth(120);
-		textFieldPS.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		textFieldPS.setStyle(
+				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
 
 		final Label labelUrl = new Label();
 		labelUrl.setText(Constante.labelUrl);
@@ -579,7 +646,8 @@ public class AddXmlNode extends Application {
 		textFieldUrl.setPadding(new Insets(5, 5, 5, 5));
 		textFieldUrl.setText(Constante.textFieldUrl);
 		textFieldUrl.setPrefWidth(685);
-		textFieldUrl.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		textFieldUrl.setStyle(
+				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
 
 		final ObservableList<Node> listHint1 = hbox1.getChildren();
 		listHint1.addAll(label, picker, spacer1, label1, comboBox, spacer2, label2, textField2, spacer3, labelL,
@@ -603,7 +671,7 @@ public class AddXmlNode extends Application {
 		button2.setMinHeight(30);
 		button2.setMaxHeight(30);
 		button2.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 		button2.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
@@ -625,12 +693,12 @@ public class AddXmlNode extends Application {
 			}
 		});
 
-		buttonTermino.setPrefWidth(220);
+		buttonTermino.setPrefWidth(230);
 		buttonTermino.setPrefHeight(30);
 		buttonTermino.setMinHeight(30);
 		buttonTermino.setMaxHeight(30);
 		buttonTermino.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 		buttonTermino.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
@@ -755,7 +823,7 @@ public class AddXmlNode extends Application {
 		buttonDownload.setMinHeight(30);
 		buttonDownload.setMaxHeight(30);
 		buttonDownload.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 		buttonDownload.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
@@ -817,7 +885,7 @@ public class AddXmlNode extends Application {
 		button4.setMinHeight(30);
 		button4.setMaxHeight(30);
 		button4.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 		button4.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
@@ -848,7 +916,7 @@ public class AddXmlNode extends Application {
 		button3.setMinHeight(30);
 		button3.setMaxHeight(30);
 		button3.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 		button3.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
@@ -870,7 +938,7 @@ public class AddXmlNode extends Application {
 		button1.setMinHeight(30);
 		button1.setMaxHeight(30);
 		button1.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 		button1.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
@@ -1151,12 +1219,16 @@ public class AddXmlNode extends Application {
 		pane.setLeft(listB);
 		pane.setRight(list);
 
+		listB.setStyle("-fx-border-color: #98bb68; -fx-border-radius: 5;");
+		list.setStyle("-fx-border-color: #98bb68; -fx-border-radius: 5;");
+
 		final SplitPane sp = new SplitPane();
 		sp.setStyle("-fx-box-border: 0px;");
 		sp.setOrientation(Orientation.HORIZONTAL);
 		sp.setDividerPositions(0f, 0.9f);
 
 		final VBox root1 = new VBox(hbox1, hbox2, hbox3);
+		root1.setStyle("-fx-border-color: #98bb68; -fx-border-radius: 5;");
 		sp.getItems().addAll(hBoxImg, root1);
 
 		final VBox root = new VBox(menuBar, sp, hbox, hb, pane);
@@ -1166,7 +1238,7 @@ public class AddXmlNode extends Application {
 		button10.setMinHeight(30);
 		button10.setMaxHeight(30);
 		button10.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 		button10.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
@@ -1380,6 +1452,7 @@ public class AddXmlNode extends Application {
 		list.setPrefHeight(650);
 
 		final Scene scene = new Scene(root, Color.BEIGE);
+		scene.getRoot().getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
 		stage.getIcons().add(new Image(getClass().getClassLoader().getResourceAsStream(Constante.photo)));
 		stage.setTitle("Convertisseur JDV");
 		stage.setScene(scene);
@@ -1406,24 +1479,24 @@ public class AddXmlNode extends Application {
 					Number newSceneWidth) {
 				if (newSceneWidth.doubleValue() >= 1509 && newSceneWidth.doubleValue() < 1632) { // ecran 16 pouces
 					button1.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button10.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button2.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button3.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button4.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					buttonDownload.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					buttonTermino.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					buttonDownload.setPrefWidth(250);
 					buttonDownload.setPrefHeight(30);
 					buttonDownload.setMinHeight(30);
 					buttonDownload.setMaxHeight(30);
-					buttonTermino.setPrefWidth(220);
+					buttonTermino.setPrefWidth(230);
 					buttonTermino.setPrefHeight(30);
 					buttonTermino.setMinHeight(30);
 					buttonTermino.setMaxHeight(30);
@@ -1480,24 +1553,24 @@ public class AddXmlNode extends Application {
 				}
 				if (newSceneWidth.doubleValue() >= 1632 && newSceneWidth.doubleValue() >= 1728) { // ecran 17 pouces
 					button1.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button10.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button2.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button3.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button4.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					buttonDownload.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					buttonTermino.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					buttonDownload.setPrefWidth(280);
 					buttonDownload.setPrefHeight(50);
 					buttonDownload.setMinHeight(50);
 					buttonDownload.setMaxHeight(50);
-					buttonTermino.setPrefWidth(250);
+					buttonTermino.setPrefWidth(260);
 					buttonTermino.setPrefHeight(50);
 					buttonTermino.setMinHeight(50);
 					buttonTermino.setMaxHeight(50);
@@ -1553,24 +1626,24 @@ public class AddXmlNode extends Application {
 
 				} else if (newSceneWidth.doubleValue() < 1509) {
 					button1.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button10.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button2.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button3.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button4.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					buttonDownload.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					buttonTermino.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #B0E0E6;-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
+							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					buttonDownload.setPrefWidth(200);
 					buttonDownload.setPrefHeight(20);
 					buttonDownload.setMinHeight(20);
 					buttonDownload.setMaxHeight(20);
-					buttonTermino.setPrefWidth(150);
+					buttonTermino.setPrefWidth(160);
 					buttonTermino.setPrefHeight(20);
 					buttonTermino.setMinHeight(20);
 					buttonTermino.setMaxHeight(20);

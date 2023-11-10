@@ -25,7 +25,9 @@ public class Constante {
 	
 	public static final String lisezmoi = "Lisez-moi";
 	
-	public static final String validateFile = "Valider Fichiers JDV";
+	public static final String validateFile = "Vérification du bien-formé";
+	
+	public static final String exit = "Quitter";
 	
 	public static final String chooseFile = "Choix fichiers";
 
@@ -190,5 +192,13 @@ public class Constante {
 	public static final String description = "rdf:Description";
 
 	public static final String photo = "logo-1.jpg";
+	
+	public static final String reduire = "Réduire tous";
+	
+	public static final String expand = "Développer tous";
+	
+	public static final String filtre = "Filtrer les JDV  ";
+	
+	public static final String refresh = "Actualiser";
 	
 }
