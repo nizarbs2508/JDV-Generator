@@ -1551,7 +1551,7 @@ public class AddXmlNode extends Application {
 					item2.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
 
 				}
-				if (newSceneWidth.doubleValue() >= 1632 && newSceneWidth.doubleValue() >= 1728) { // ecran 17 pouces
+				if (newSceneWidth.doubleValue() >= 1632 && newSceneWidth.doubleValue() <= 1728) { // ecran 17 pouces
 					button1.setStyle(
 							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
 					button10.setStyle(
