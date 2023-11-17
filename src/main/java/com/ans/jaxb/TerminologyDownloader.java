@@ -32,8 +32,8 @@ import javafx.scene.control.Alert.AlertType;
  * @author bensalem Nizar
  */
 public class TerminologyDownloader {
-	private static String username = "";// "nizar.bensalem.ext@esante.gouv.fr";
-	private static String password = "";// "Chnanah000";
+	private static String username = "";
+	private static String password = "";
 	private static final String client_id = Constante.clientId;
 	private static final String client_secret = "";
 	private static File newFile = null;
