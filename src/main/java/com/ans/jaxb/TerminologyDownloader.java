@@ -85,16 +85,16 @@ public class TerminologyDownloader {
 		for (final String str1 : terminologyIdList) {
 			String zipFilename = null;
 			String filename = null;
-			final String latestVersion = getLatestVersionDetails(str1);
+			final String latestVersion = getLatestVersionDetails(str1.trim());
 			if (latestVersion == null) {
-				System.out.println("No zip file available for " + str1 + " or failed to extract RDF.");
+				System.out.println("No zip file available for " + str1.trim() + " or failed to extract RDF.");
 			} else {
-				final String localFilename = Constante.textFieldRDF + str1 + "_" + latestVersion + ".zip";
+				final String localFilename = Constante.textFieldRDF + str1.trim() + "_" + latestVersion + ".zip";
 				if (new File(localFilename).exists()) {
 					new File(localFilename).delete();
 				}
 
-				zipFilename = downloadZip(str1, latestVersion);
+				zipFilename = downloadZip(str1.trim(), latestVersion);
 				try {
 					final String str = new File(zipFilename).getName();
 					final int dotIndex = str.lastIndexOf('.');

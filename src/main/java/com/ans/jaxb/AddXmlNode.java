@@ -773,9 +773,9 @@ public class AddXmlNode extends Application {
 							map.put(words[1], (String) each.getValue());
 						}
 					}
-					tokenurl = prop.getProperty("token.url");
-					downloadurl = prop.getProperty("download.url");
-					tokenopen = prop.getProperty("token.open");
+					tokenurl = prop.getProperty("token.url").trim();
+					downloadurl = prop.getProperty("download.url").trim();
+					tokenopen = prop.getProperty("token.open").trim();
 
 				} catch (final IOException ex) {
 					ex.printStackTrace();
@@ -887,7 +887,7 @@ public class AddXmlNode extends Application {
 										for (final File file : fileRdf) {
 											if (getExtension(file.getAbsolutePath()).equals(Constante.rdf)) {
 												List<String> listStr = new ArrayList<String>();
-												final String fileName = file.getName();
+												final String fileName = file.getName().trim();
 												String fileDestName = null;
 
 												for (Map.Entry<String, String> mapentry : map1.entrySet()) {
@@ -921,7 +921,7 @@ public class AddXmlNode extends Application {
 													}
 													doc.normalize();
 													prettyPrint(doc, new File(textFieldPS.getText()).getParent(),
-															fileDestName);
+															fileDestName.trim());
 
 												} catch (final ParserConfigurationException e) {
 													e.printStackTrace();
