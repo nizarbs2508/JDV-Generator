@@ -22,6 +22,7 @@ import javafx.util.StringConverter;
  * @author bensalem Nizar
  */
 public class DateTimePicker extends DatePicker {
+	
 	public static final String DefaultFormat = DateTimeFormatterBuilder.getLocalizedDateTimePattern(FormatStyle.MEDIUM,
 			FormatStyle.SHORT, IsoChronology.INSTANCE, Locale.FRANCE); // or whatever Locale
 

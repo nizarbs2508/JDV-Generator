@@ -9,9 +9,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
@@ -19,15 +19,19 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -44,6 +48,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.controlsfx.control.CheckListView;
 import org.w3c.dom.Document;
@@ -72,6 +77,7 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Accordion;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
@@ -83,12 +89,14 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TitledPane;
 import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -110,7 +118,6 @@ import javafx.stage.WindowEvent;
  * @author bensalem Nizar
  */
 public class AddXmlNode extends Application {
-
 	/**
 	 * desktop
 	 */
@@ -123,7 +130,6 @@ public class AddXmlNode extends Application {
 	 * files list
 	 */
 	private static List<File> filesB;
-
 	/**
 	 * files list to inster
 	 */
@@ -144,7 +150,6 @@ public class AddXmlNode extends Application {
 	 * list view
 	 */
 	private static CheckListView<File> list;
-
 	/**
 	 * list view B
 	 */
@@ -181,9 +186,29 @@ public class AddXmlNode extends Application {
 	 * primaryStage
 	 */
 	public Stage primaryStage = new Stage();
+	/**
+	 * thirdStage
+	 */
+	public Stage thirdStage;
+	/**
+	 * tokenurl
+	 */
+	public String tokenurl = null;
+	/**
+	 * downloadurl
+	 */
+	public String downloadurl = null;
+	/**
+	 * tokenopen
+	 */
+	public String tokenopen = null;
+	/**
+	 * fileContent
+	 */
+	public String fileContent = null;
 
 	/**
-	 * loading in api
+	 * load task api
 	 */
 	public void runTask(final Stage taskUpdateStage, final ProgressIndicator progress) {
 		Task<Void> longTask = new Task<Void>() {
@@ -215,9 +240,14 @@ public class AddXmlNode extends Application {
 	}
 
 	/**
-	 * start javafx main
+	 * start javafx App
 	 */
 	public void start(final Stage stage) {
+		final Button buttonTermino1 = new Button(Constante.buttonTermino);
+		final TextField textLogin = new TextField();
+		final PasswordField textPwd = new PasswordField();
+		final Label labelPwd = new Label(Constante.password);
+		final Label labelLog = new Label(Constante.identifiant);
 		hb.setVisible(false);
 		selectAll.setSelected(false);
 		list = new CheckListView<File>();
@@ -235,73 +265,72 @@ public class AddXmlNode extends Application {
 		updatePane.setSpacing(5.0d);
 		updatePane.setAlignment(Pos.CENTER);
 		updatePane.getChildren().addAll(progress);
-		updatePane.setStyle("-fx-background-color: #FFFAFA");
+		updatePane.setStyle(Constante.style4);
 		final Stage taskUpdateStage = new Stage(StageStyle.UNDECORATED);
 		taskUpdateStage.setScene(new Scene(updatePane, 170, 170));
 		// End progressBar
 
-		final ImageView imgView = new ImageView("UIControls/multiple_files.png");
+		final ImageView imgView = new ImageView(Constante.image10);
 		imgView.setFitWidth(20);
 		imgView.setFitHeight(20);
 
-		final ImageView imgViewM = new ImageView("UIControls/macro.jpg");
+		final ImageView imgViewM = new ImageView(Constante.image11);
 		imgViewM.setFitWidth(20);
 		imgViewM.setFitHeight(20);
 
-		final ImageView imgValid = new ImageView("UIControls/check.jpg");
+		final ImageView imgValid = new ImageView(Constante.image12);
 		imgValid.setFitWidth(20);
 		imgValid.setFitHeight(20);
 
-		final ImageView imgRead = new ImageView("UIControls/lisezmoi.png");
+		final ImageView imgRead = new ImageView(Constante.image13);
 		imgRead.setFitWidth(20);
 		imgRead.setFitHeight(20);
 
-		final ImageView imgExit = new ImageView("UIControls/exit.png");
+		final ImageView imgExit = new ImageView(Constante.image14);
 		imgExit.setFitWidth(20);
 		imgExit.setFitHeight(20);
 
 		final Menu file = new Menu(Constante.openFile);
-		file.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		file.setStyle(Constante.style2);
 		final MenuItem item = new MenuItem(Constante.openToFile, imgView);
 		final MenuItem item1 = new MenuItem(Constante.validateFile, imgValid);
 		final MenuItem item3 = new MenuItem(Constante.exit, imgExit);
-		item1.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-		item.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-		item3.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		item1.setStyle(Constante.style2);
+		item.setStyle(Constante.style2);
+		item3.setStyle(Constante.style2);
 		file.getItems().addAll(item, item1, item3);
 		// Creating separator menu items
-		SeparatorMenuItem sep = new SeparatorMenuItem();
+		final SeparatorMenuItem sep = new SeparatorMenuItem();
 		// Adding separator objects to menu
 		file.getItems().add(2, sep);
 
 		final Menu apropos = new Menu(Constante.apropos);
-		apropos.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		apropos.setStyle(Constante.style2);
 		final MenuItem item2 = new MenuItem(Constante.lisezmoi, imgRead);
-		item2.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		item2.setStyle(Constante.style2);
 		apropos.getItems().addAll(item2);
 
 		// Creating a File chooser
 		final FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle(Constante.chooseFile);
-		fileChooser.getExtensionFilters()
-				.addAll(new ExtensionFilter("ALL Files", "*.xml*", "*.xlsx*", "*.xlsm*", "*.rdf*"));
+		fileChooser.getExtensionFilters().addAll(new ExtensionFilter("ALL Files", "*.xml*", "*.xlsx*", "*.xlsm*"));
 		files = new ArrayList<File>();
 		filesB = new ArrayList<File>();
-		list.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-		listB.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+		list.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+		listB.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
 		final Label labelEmpty = new Label(Constante.empty1);
-		labelEmpty.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		labelEmpty.setStyle(Constante.style5);
 		list.setPlaceholder(labelEmpty);
-		list.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		list.setStyle(Constante.style5);
 		list.setPrefHeight(550);
 		list.setMaxHeight(550);
 		list.setMinHeight(550);
 		list.setPrefWidth((width - 10) / 2);
 		list.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		final Label labelEmpty1 = new Label(Constante.empty);
-		labelEmpty1.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		labelEmpty1.setStyle(Constante.style5);
 		listB.setPlaceholder(labelEmpty1);
-		listB.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		listB.setStyle(Constante.style5);
 		listB.setPrefHeight(550);
 		listB.setMaxHeight(550);
 		listB.setMinHeight(550);
@@ -349,6 +378,14 @@ public class AddXmlNode extends Application {
 						primaryStage.close();
 					}
 				}
+				if (thirdStage != null) {
+					if (thirdStage.isShowing()) {
+						thirdStage.close();
+						textLogin.setText("");
+						textPwd.setText("");
+
+					}
+				}
 				stage.close();
 			}
 		});
@@ -378,8 +415,8 @@ public class AddXmlNode extends Application {
 						}
 						final Alert alert = new Alert(AlertType.ERROR);
 						final DialogPane dialogPane = alert.getDialogPane();
-						dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-						dialogPane.getStyleClass().add("myDialog");
+						dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+						dialogPane.getStyleClass().add(Constante.dialog);
 						dialogPane.setMinHeight(120 * fileMalFormed.size());
 						dialogPane.setMaxHeight(120 * fileMalFormed.size());
 						dialogPane.setPrefHeight(120 * fileMalFormed.size());
@@ -390,8 +427,8 @@ public class AddXmlNode extends Application {
 					} else {
 						final Alert alert = new Alert(AlertType.INFORMATION);
 						final DialogPane dialogPane = alert.getDialogPane();
-						dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-						dialogPane.getStyleClass().add("myDialog");
+						dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+						dialogPane.getStyleClass().add(Constante.dialog);
 						dialogPane.setMinHeight(130);
 						dialogPane.setMaxHeight(130);
 						dialogPane.setPrefHeight(130);
@@ -408,18 +445,19 @@ public class AddXmlNode extends Application {
 		item2.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent event) {
 				Platform.runLater(() -> {
-					final File file = new File(getClass().getResource("/Lisez-moi.md").getFile());
-					VBox root = new VBox();
+					final ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+					final InputStream is = classloader.getResourceAsStream("lisezmoi.md");
+					final VBox root = new VBox();
 					root.setPadding(new Insets(10));
 					root.setSpacing(5);
-					TextArea textArea = new TextArea();
+					final TextArea textArea = new TextArea();
 					textArea.setEditable(false);
 					textArea.setPrefHeight(Integer.MAX_VALUE);
 					textArea.setPrefWidth(Integer.MAX_VALUE);
-					textArea.setStyle("-fx-background-color: #A9A9A9;");
-					textArea.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+					textArea.setStyle(Constante.style6);
+					textArea.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
 					try {
-						textArea.setText(readFileContents(file));
+						textArea.setText(readFileContents(is));
 						root.getChildren().add(textArea);
 						Scene scene = new Scene(root);
 						primaryStage.setTitle(Constante.lisezmoi);
@@ -434,42 +472,39 @@ public class AddXmlNode extends Application {
 			}
 		});
 
-		final ImageView imgViewA = new ImageView("UIControls/art-decor.png");
+		final ImageView imgViewA = new ImageView(Constante.image1);
 		imgViewA.setFitWidth(20);
 		imgViewA.setFitHeight(20);
 
-		final ImageView imgViewO = new ImageView("UIControls/oxygen.png");
+		final ImageView imgViewO = new ImageView(Constante.image2);
 		imgViewO.setFitWidth(20);
 		imgViewO.setFitHeight(20);
 
-		final ImageView imgViewT = new ImageView("UIControls/tree.png");
+		final ImageView imgViewT = new ImageView(Constante.image3);
 		imgViewT.setFitWidth(20);
 		imgViewT.setFitHeight(20);
 
-		final ImageView imgViewR = new ImageView("UIControls/rdf.png");
+		final ImageView imgViewR = new ImageView(Constante.image4);
 		imgViewR.setFitWidth(20);
 		imgViewR.setFitHeight(20);
-		
-		final ImageView imgViewI = new ImageView("UIControls/reinitialiser.png");
+
+		final ImageView imgViewI = new ImageView(Constante.image5);
 		imgViewI.setFitWidth(20);
 		imgViewI.setFitHeight(20);
-		
-		
-		
 
 		// Creating a menu bar and adding menu to it.
 		final MenuBar menuBar = new MenuBar(file, apropos);
 		final Button button1 = new Button(Constante.button1, imgViewA);
 		final Button button10 = new Button(Constante.button10, imgViewM);
 
-		final ImageView imgViewD = new ImageView("UIControls/download.png");
+		final ImageView imgViewD = new ImageView(Constante.image6);
 		imgViewD.setFitWidth(20);
 		imgViewD.setFitHeight(20);
 
 		final Button buttonDownload = new Button(Constante.buttonDownload, imgViewD);
 		final Button buttonTermino = new Button(Constante.buttonTermino, imgViewR);
 
-		final Image ansImage = new Image(AddXmlNode.class.getResource("/ans01.jpg").toExternalForm());
+		final Image ansImage = new Image(AddXmlNode.class.getResource(Constante.image7).toExternalForm());
 		// creating ImageView for adding image
 		final ImageView imageView = new ImageView();
 		imageView.setImage(ansImage);
@@ -481,11 +516,15 @@ public class AddXmlNode extends Application {
 		// creating HBox to add imageview
 		final HBox hBoxImg = new HBox();
 		hBoxImg.getChildren().addAll(imageView);
-		hBoxImg.setStyle("-fx-background-color: white;-fx-border-color: #98bb68; -fx-border-radius: 5;");
+		hBoxImg.setStyle(Constante.style7);
 
 		final Region spacer1 = new Region();
 		spacer1.setMaxWidth(10);
 		HBox.setHgrow(spacer1, Priority.ALWAYS);
+
+		final Region spacer13 = new Region();
+		spacer13.setMaxWidth(10);
+		HBox.setHgrow(spacer13, Priority.ALWAYS);
 
 		final Region spacer2 = new Region();
 		spacer2.setMaxWidth(10);
@@ -550,21 +589,20 @@ public class AddXmlNode extends Application {
 		final Label label = new Label();
 		label.setText(Constante.label);
 		label.setPadding(new Insets(5, 5, 5, 5));
-		label.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		label.setStyle(Constante.style5);
 
-		DateTimePicker picker = new DateTimePicker();
+		final DateTimePicker picker = new DateTimePicker();
 		picker.setPadding(new Insets(5, 5, 5, 5));
-		LocalDateTime localDateTime = LocalDateTime.of(2021, Month.MARCH, 15, 00, 00, 00);
+		final LocalDateTime localDateTime = LocalDateTime.of(2021, Month.MARCH, 15, 00, 00, 00);
 		picker.setDateTimeValue(localDateTime);
 		picker.setPrefWidth(190);
-		picker.setStyle(
-				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
+		picker.setStyle(Constante.style8);
 		picker.setEditable(false);
 
 		final Label label1 = new Label();
 		label1.setText(Constante.label1);
 		label1.setPadding(new Insets(5, 5, 5, 5));
-		label1.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		label1.setStyle(Constante.style5);
 
 		final ComboBox<String> comboBox = new ComboBox<String>();
 		ObservableList<String> options = FXCollections.observableArrayList(Constante.finale, Constante.partiel,
@@ -573,81 +611,74 @@ public class AddXmlNode extends Application {
 		comboBox.getSelectionModel().select(0);
 		comboBox.setPadding(new Insets(5, 5, 5, 5));
 		comboBox.setPrefWidth(140);
-		comboBox.setStyle(
-				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
-		comboBox.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+		comboBox.setStyle(Constante.style8);
+		comboBox.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
 
 		final Label label2 = new Label();
 		label2.setText(Constante.label2);
 		label2.setPadding(new Insets(5, 5, 5, 5));
-		label2.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		label2.setStyle(Constante.style5);
 
 		final TextField textField2 = new TextField();
 		textField2.setText(Constante.textField2);
 		textField2.setPrefWidth(40);
 		textField2.setPadding(new Insets(5, 5, 5, 5));
-		textField2.setStyle(
-				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
+		textField2.setStyle(Constante.style8);
 
 		final Label labelL = new Label();
 		labelL.setText(Constante.labelL);
 		labelL.setPadding(new Insets(5, 5, 5, 5));
-		labelL.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		labelL.setStyle(Constante.style5);
 
 		final TextField textFieldL = new TextField();
 		textFieldL.setPadding(new Insets(5, 5, 5, 5));
 		textFieldL.setText(Constante.textFieldL);
 		textFieldL.setPrefWidth(40);
-		textFieldL.setStyle(
-				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
+		textFieldL.setStyle(Constante.style8);
 
 		final Label labelT = new Label();
 		labelT.setText(Constante.labelT);
 		labelT.setPadding(new Insets(5, 5, 5, 5));
-		labelT.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		labelT.setStyle(Constante.style5);
 
 		final TextField textFieldT = new TextField();
 		textFieldT.setPadding(new Insets(5, 5, 5, 5));
 		textFieldT.setText(Constante.textFieldT);
 		textFieldT.setPrefWidth(40);
-		textFieldT.setStyle(
-				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
+		textFieldT.setStyle(Constante.style8);
 
 		final Label labelP = new Label();
 		labelP.setText(Constante.labelP);
 		labelP.setPadding(new Insets(5, 5, 5, 5));
-		labelP.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		labelP.setStyle(Constante.style5);
 
 		final TextField textFieldP = new TextField();
 		textFieldP.setPadding(new Insets(5, 5, 5, 5));
 		textFieldP.setText(Constante.textFieldP);
 		textFieldP.setPrefWidth(180);
-		textFieldP.setStyle(
-				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
+		textFieldP.setStyle(Constante.style8);
 
 		final Label labelPS = new Label();
 		labelPS.setText(Constante.labelPS);
 		labelPS.setPadding(new Insets(5, 5, 5, 5));
-		labelPS.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		labelPS.setStyle(Constante.style5);
 
 		final TextField textFieldPS = new TextField();
 		textFieldPS.setPadding(new Insets(5, 5, 5, 5));
 		textFieldPS.setText(Constante.textFieldPS);
 		textFieldPS.setPrefWidth(120);
-		textFieldPS.setStyle(
-				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
+		textFieldPS.setStyle(Constante.style8);
 
 		final Label labelUrl = new Label();
 		labelUrl.setText(Constante.labelUrl);
 		labelUrl.setPadding(new Insets(5, 5, 5, 5));
-		labelUrl.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		labelUrl.setStyle(Constante.style5);
 
 		final TextField textFieldUrl = new TextField();
 		textFieldUrl.setPadding(new Insets(5, 5, 5, 5));
 		textFieldUrl.setText(Constante.textFieldUrl);
-		textFieldUrl.setPrefWidth(685);
-		textFieldUrl.setStyle(
-				"-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
+		textFieldUrl.setPrefWidth(680);
+		textFieldUrl.setStyle(Constante.style8);
 
 		final ObservableList<Node> listHint1 = hbox1.getChildren();
 		listHint1.addAll(label, picker, spacer1, label1, comboBox, spacer2, label2, textField2, spacer3, labelL,
@@ -670,8 +701,8 @@ public class AddXmlNode extends Application {
 		button2.setPrefHeight(30);
 		button2.setMinHeight(30);
 		button2.setMaxHeight(30);
-		button2.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		button2.setStyle(Constante.style1);
+
 		button2.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
@@ -680,8 +711,8 @@ public class AddXmlNode extends Application {
 				} else {
 					final Alert alert = new Alert(AlertType.ERROR);
 					final DialogPane dialogPane = alert.getDialogPane();
-					dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-					dialogPane.getStyleClass().add("myDialog");
+					dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+					dialogPane.getStyleClass().add(Constante.dialog);
 					dialogPane.setMinHeight(130);
 					dialogPane.setMaxHeight(130);
 					dialogPane.setPrefHeight(130);
@@ -697,124 +728,347 @@ public class AddXmlNode extends Application {
 		buttonTermino.setPrefHeight(30);
 		buttonTermino.setMinHeight(30);
 		buttonTermino.setMaxHeight(30);
-		buttonTermino.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		buttonTermino.setStyle(Constante.style1);
 		buttonTermino.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
-				if (files != null) {
-					if (!files.isEmpty() && getExtension(files.get(0).getAbsolutePath()).equals(Constante.rdf)) {
-						runTask(taskUpdateStage, progress);
-						Platform.runLater(() -> {
-							Document doc = null;
-							for (File file : files) {
-								List<String> listStr = new ArrayList<String>();
-								final String fileName = file.getName();
-								String fileDestName = null;
-								if (fileName.toUpperCase().contains(Constante.cis)
-										&& !fileName.toUpperCase().contains(Constante.cisp2)) {
-									fileDestName = Constante.cisdest;
-								} else if (fileName.toUpperCase().contains(Constante.cip)) {
-									fileDestName = Constante.cip;
-								} else if (fileName.toUpperCase().contains(Constante.ccam)) {
-									fileDestName = Constante.ccamdest;
-								} else if (fileName.toUpperCase().contains(Constante.adicap)) {
-									fileDestName = Constante.adicapdest;
-								} else if (fileName.toUpperCase().contains(Constante.medicabase)) {
-									fileDestName = Constante.medicabasedest;
-								} else if (fileName.toUpperCase().contains(Constante.ucd)) {
-									fileDestName = Constante.ucddest;
-								} else if (fileName.toUpperCase().contains(Constante.cladimed)) {
-									fileDestName = Constante.cladimeddest;
-								} else if (fileName.toUpperCase().contains(Constante.emdn)) {
-									fileDestName = Constante.emdndest;
-								} else if (fileName.toUpperCase().contains(Constante.loinc)) {
-									fileDestName = Constante.loincdest;
-								} else if (fileName.toUpperCase().contains(Constante.cim10)) {
-									fileDestName = Constante.cim10dest;
-								} else if (fileName.toUpperCase().contains(Constante.cisp2)) {
-									fileDestName = Constante.cisp2dest;
-								} else if (fileName.toUpperCase().contains(Constante.atc)) {
-									fileDestName = Constante.atcdest;
-								} else if (fileName.toUpperCase().contains(Constante.ucum)) {
-									fileDestName = Constante.ucumdest;
-								}
-								try {
-									doc = parseXML(file.getAbsolutePath());
-									if (doc != null) {
-										NodeList nList = doc.getElementsByTagName(Constante.notation);
-										for (int i = 0; i < nList.getLength(); i++) {
-											org.w3c.dom.Node nNode = (org.w3c.dom.Node) nList.item(i);
-											Element eElement = (Element) nNode;
-											listStr.add(eElement.getFirstChild().getTextContent());
+				thirdStage = new Stage();
+
+				final VBox root = new VBox();
+				root.setPadding(new Insets(10));
+				root.setSpacing(5);
+				labelLog.setPadding(new Insets(5, 5, 5, 5));
+				labelLog.setStyle(Constante.style5);
+				labelPwd.setPadding(new Insets(5, 5, 5, 5));
+				labelPwd.setStyle(Constante.style5);
+				textLogin.setPrefWidth(40);
+				textLogin.setPadding(new Insets(5, 5, 5, 5));
+				textLogin.setStyle(Constante.style8);
+				textPwd.setPrefWidth(40);
+				textPwd.setPadding(new Insets(5, 5, 5, 5));
+				textPwd.setStyle(Constante.style8);
+
+				// create a tile pane
+				HBox rbox = new HBox();
+				final List<String> matchingKey = new ArrayList<>();
+				final Map<String, String> map = new HashMap<String, String>();
+				final Map<String, String> map1 = new HashMap<String, String>();
+				try (InputStream input = AddXmlNode.class.getClassLoader().getResourceAsStream("rdf.properties")) {
+
+					Properties prop = new Properties();
+
+					if (input == null) {
+						System.out.println("Sorry, unable to find rdf.properties");
+						return;
+					}
+					// load a properties file from class path, inside static method
+					prop.load(input);
+					// get the property value and print it out
+					Pattern patt = Pattern.compile("sample.*");
+					for (Entry<Object, Object> each : prop.entrySet()) {
+						final Matcher m = patt.matcher((String) each.getKey());
+						if (m.find()) {
+							String[] words = ((String) each.getKey()).split("sample.");
+							matchingKey.add(words[1]);
+							map.put(words[1], (String) each.getValue());
+						}
+					}
+					tokenurl = prop.getProperty("token.url");
+					downloadurl = prop.getProperty("download.url");
+					tokenopen = prop.getProperty("token.open");
+
+				} catch (final IOException ex) {
+					ex.printStackTrace();
+				}
+
+				List<String> selectedList = new ArrayList<String>();
+
+				for (int i = 0; i < matchingKey.size(); i++) {
+					CheckBox c = new CheckBox(matchingKey.get(i));
+					c.setStyle(Constante.style20);
+					final String name = matchingKey.get(i);
+					final Region spacer = new Region();
+					spacer.setMaxWidth(10);
+					HBox.setHgrow(spacer, Priority.ALWAYS);
+					rbox.getChildren().addAll(c, spacer);
+
+					c.setOnAction(new EventHandler<ActionEvent>() {
+						public void handle(ActionEvent e) {
+							if (c.isSelected()) {
+								selectedList.add(name);
+							} else {
+								selectedList.remove(name);
+							}
+						}
+					});
+				}
+
+				buttonTermino1.setPrefWidth(200);
+				buttonTermino1.setPrefHeight(30);
+				buttonTermino1.setMinHeight(30);
+				buttonTermino1.setMaxHeight(30);
+				buttonTermino1.setStyle(Constante.style1);
+
+				HBox resultButton = new HBox();
+				resultButton.getChildren().addAll(buttonTermino1);
+				resultButton.setAlignment(Pos.CENTER);
+
+				final Region spacer4 = new Region();
+				spacer4.setMaxHeight(10);
+				VBox.setVgrow(spacer4, Priority.ALWAYS);
+
+				final TitledPane firstTitledPane = new TitledPane();
+				firstTitledPane.setText(Constante.information);
+				firstTitledPane.setPadding(new Insets(5, 5, 5, 5));
+				firstTitledPane.setStyle(Constante.style5);
+
+				final VBox content1 = new VBox();
+				final Label labelContent = new Label(Constante.infoContent);
+				content1.getChildren().add(labelContent);
+				labelContent.setPadding(new Insets(5, 5, 5, 5));
+				labelContent.setStyle(Constante.style5);
+
+				firstTitledPane.setContent(content1);
+
+				Accordion accordion = new Accordion();
+				accordion.getPanes().addAll(firstTitledPane);
+
+				final Region spacer5 = new Region();
+				spacer5.setMaxHeight(20);
+				VBox.setVgrow(spacer5, Priority.ALWAYS);
+
+				root.getChildren().addAll(labelLog, textLogin, labelPwd, textPwd, rbox, spacer4, resultButton, spacer5,
+						accordion);
+				Scene scene = new Scene(root, 650, 400);
+				thirdStage.setTitle(Constante.terminology);
+				thirdStage.setScene(scene);
+				thirdStage.setMaximized(false);
+				thirdStage.show();
+
+				buttonTermino1.setOnAction(new EventHandler<ActionEvent>() {
+					@Override
+					public void handle(final ActionEvent event) {
+						if (!textLogin.getText().isEmpty() && !textPwd.getText().isEmpty() && !selectedList.isEmpty()) {
+							runTask(taskUpdateStage, progress);
+							Platform.runLater(() -> {
+								List<File> fileRdf = new ArrayList<File>();
+								TerminologyDownloader downloader = new TerminologyDownloader();
+								fileRdf = downloader.main(textLogin.getText(), textPwd.getText(), selectedList, map,
+										tokenurl, downloadurl, tokenopen);
+
+								try (InputStream input = AddXmlNode.class.getClassLoader()
+										.getResourceAsStream("rdf.properties")) {
+
+									Properties prop = new Properties();
+
+									if (input == null) {
+										System.out.println("Sorry, unable to find rdf.properties");
+										return;
+									}
+									// load a properties file from class path, inside static method
+									prop.load(input);
+									// get the property value and print it out
+									Pattern patt = Pattern.compile("name.*");
+									for (Entry<Object, Object> each : prop.entrySet()) {
+										final Matcher m = patt.matcher((String) each.getKey());
+										if (m.find()) {
+											String[] words = ((String) each.getKey()).split("name.");
+											matchingKey.add(words[1]);
+											map1.put(words[1], (String) each.getValue());
 										}
 									}
-									org.w3c.dom.Node node = removeAllChildren(doc.getFirstChild());
-									for (String str : listStr) {
-										org.w3c.dom.Node newNode = null;
-										newNode = doc.createElement(Constante.description);
-										node.appendChild(newNode);
-										org.w3c.dom.Node secondNode = null;
-										secondNode = doc.createElement(Constante.notation);
-										secondNode.setTextContent(str);
-										newNode.appendChild(secondNode);
-									}
-									doc.normalize();
-									prettyPrint(doc, new File(textFieldPS.getText()).getParent(), fileDestName);
-
-								} catch (final ParserConfigurationException e) {
-									e.printStackTrace();
-								} catch (final SAXException e) {
-									e.printStackTrace();
-								} catch (final IOException e) {
-									e.printStackTrace();
-								} catch (final Exception e) {
-									e.printStackTrace();
+								} catch (final IOException ex) {
+									ex.printStackTrace();
 								}
 
-							}
-							final Alert alert = new Alert(AlertType.INFORMATION);
+								if (fileRdf != null) {
+									if (!fileRdf.isEmpty()) {
+										Document doc = null;
+										for (final File file : fileRdf) {
+											if (getExtension(file.getAbsolutePath()).equals(Constante.rdf)) {
+												List<String> listStr = new ArrayList<String>();
+												final String fileName = file.getName();
+												String fileDestName = null;
+
+												for (Map.Entry<String, String> mapentry : map1.entrySet()) {
+													if (fileName.toUpperCase()
+															.contains((CharSequence) mapentry.getKey())) {
+														fileDestName = (String) mapentry.getValue();
+														break;
+													}
+												}
+												try {
+													doc = parseXML(file.getAbsolutePath());
+													if (doc != null) {
+														final NodeList nList = doc
+																.getElementsByTagName(Constante.notation);
+														for (int i = 0; i < nList.getLength(); i++) {
+															org.w3c.dom.Node nNode = (org.w3c.dom.Node) nList.item(i);
+															final Element eElement = (Element) nNode;
+															listStr.add(eElement.getFirstChild().getTextContent());
+														}
+													}
+													final org.w3c.dom.Node node = removeAllChildren(
+															doc.getFirstChild());
+													for (final String str : listStr) {
+														org.w3c.dom.Node newNode = null;
+														newNode = doc.createElement(Constante.description);
+														node.appendChild(newNode);
+														org.w3c.dom.Node secondNode = null;
+														secondNode = doc.createElement(Constante.notation);
+														secondNode.setTextContent(str);
+														newNode.appendChild(secondNode);
+													}
+													doc.normalize();
+													prettyPrint(doc, new File(textFieldPS.getText()).getParent(),
+															fileDestName);
+
+												} catch (final ParserConfigurationException e) {
+													e.printStackTrace();
+												} catch (final SAXException e) {
+													e.printStackTrace();
+												} catch (final IOException e) {
+													e.printStackTrace();
+												} catch (final Exception e) {
+													e.printStackTrace();
+												}
+											}
+										}
+										final Alert alert = new Alert(AlertType.INFORMATION);
+										final DialogPane dialogPane = alert.getDialogPane();
+										dialogPane.getStylesheets()
+												.add(getClass().getResource(Constante.style).toExternalForm());
+										dialogPane.getStyleClass().add(Constante.dialog);
+										dialogPane.setMinHeight(130);
+										dialogPane.setMaxHeight(130);
+										dialogPane.setPrefHeight(130);
+										alert.setContentText(Constante.alert2);
+										alert.setHeaderText(null);
+										alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+										alert.showAndWait();
+										thirdStage.close();
+										textLogin.setText("");
+										textPwd.setText("");
+										String outputDir = Constante.textFieldRDF;
+										deleteDirectory(new File(outputDir));
+									} else {
+										thirdStage.close();
+										textLogin.setText("");
+										textPwd.setText("");
+									}
+								} else {
+									thirdStage.close();
+									textLogin.setText("");
+									textPwd.setText("");
+								}
+							});
+						} else if (textLogin.getText().isEmpty() && textPwd.getText().isEmpty()
+								&& selectedList.isEmpty()) {
+							final Alert alert = new Alert(AlertType.ERROR);
 							final DialogPane dialogPane = alert.getDialogPane();
-							dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-							dialogPane.getStyleClass().add("myDialog");
+							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+							dialogPane.getStyleClass().add(Constante.dialog);
 							dialogPane.setMinHeight(130);
 							dialogPane.setMaxHeight(130);
 							dialogPane.setPrefHeight(130);
-							alert.setContentText(Constante.alert2);
+							alert.setContentText(Constante.alert8);
 							alert.setHeaderText(null);
 							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
 							alert.showAndWait();
-							files = new ArrayList<File>();
-							finalFiles = new ArrayList<File>();
-							list.getItems().clear();
-							list.getCheckModel().clearChecks();
-						});
-					} else {
-						final Alert alert = new Alert(AlertType.ERROR);
-						final DialogPane dialogPane = alert.getDialogPane();
-						dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-						dialogPane.getStyleClass().add("myDialog");
-						dialogPane.setMinHeight(130);
-						dialogPane.setMaxHeight(130);
-						dialogPane.setPrefHeight(130);
-						alert.setContentText(Constante.alert8);
-						alert.setHeaderText(null);
-						alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-						alert.showAndWait();
+						} else if (textLogin.getText().isEmpty() && !textPwd.getText().isEmpty()
+								&& !selectedList.isEmpty()) {
+							final Alert alert = new Alert(AlertType.ERROR);
+							final DialogPane dialogPane = alert.getDialogPane();
+							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+							dialogPane.getStyleClass().add(Constante.dialog);
+							dialogPane.setMinHeight(130);
+							dialogPane.setMaxHeight(130);
+							dialogPane.setPrefHeight(130);
+							alert.setContentText(Constante.alert13);
+							alert.setHeaderText(null);
+							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+							alert.showAndWait();
+						} else if (!textLogin.getText().isEmpty() && textPwd.getText().isEmpty()
+								&& !selectedList.isEmpty()) {
+							final Alert alert = new Alert(AlertType.ERROR);
+							final DialogPane dialogPane = alert.getDialogPane();
+							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+							dialogPane.getStyleClass().add(Constante.dialog);
+							dialogPane.setMinHeight(130);
+							dialogPane.setMaxHeight(130);
+							dialogPane.setPrefHeight(130);
+							alert.setContentText(Constante.alert14);
+							alert.setHeaderText(null);
+							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+							alert.showAndWait();
+						} else if (!textLogin.getText().isEmpty() && !textPwd.getText().isEmpty()
+								&& selectedList.isEmpty()) {
+							final Alert alert = new Alert(AlertType.ERROR);
+							final DialogPane dialogPane = alert.getDialogPane();
+							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+							dialogPane.getStyleClass().add(Constante.dialog);
+							dialogPane.setMinHeight(130);
+							dialogPane.setMaxHeight(130);
+							dialogPane.setPrefHeight(130);
+							alert.setContentText(Constante.alert15);
+							alert.setHeaderText(null);
+							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+							alert.showAndWait();
+						} else if (!textLogin.getText().isEmpty() && textPwd.getText().isEmpty()
+								&& selectedList.isEmpty()) {
+							final Alert alert = new Alert(AlertType.ERROR);
+							final DialogPane dialogPane = alert.getDialogPane();
+							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+							dialogPane.getStyleClass().add(Constante.dialog);
+							dialogPane.setMinHeight(130);
+							dialogPane.setMaxHeight(130);
+							dialogPane.setPrefHeight(130);
+							alert.setContentText(Constante.alert16);
+							alert.setHeaderText(null);
+							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+							alert.showAndWait();
+						} else if (textLogin.getText().isEmpty() && !textPwd.getText().isEmpty()
+								&& selectedList.isEmpty()) {
+							final Alert alert = new Alert(AlertType.ERROR);
+							final DialogPane dialogPane = alert.getDialogPane();
+							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+							dialogPane.getStyleClass().add(Constante.dialog);
+							dialogPane.setMinHeight(130);
+							dialogPane.setMaxHeight(130);
+							dialogPane.setPrefHeight(130);
+							alert.setContentText(Constante.alert17);
+							alert.setHeaderText(null);
+							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+							alert.showAndWait();
+						} else if (textLogin.getText().isEmpty() && textPwd.getText().isEmpty()
+								&& !selectedList.isEmpty()) {
+							final Alert alert = new Alert(AlertType.ERROR);
+							final DialogPane dialogPane = alert.getDialogPane();
+							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+							dialogPane.getStyleClass().add(Constante.dialog);
+							dialogPane.setMinHeight(130);
+							dialogPane.setMaxHeight(130);
+							dialogPane.setPrefHeight(130);
+							alert.setContentText(Constante.alert18);
+							alert.setHeaderText(null);
+							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+							alert.showAndWait();
+						} else {
+							final Alert alert = new Alert(AlertType.ERROR);
+							final DialogPane dialogPane = alert.getDialogPane();
+							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+							dialogPane.getStyleClass().add(Constante.dialog);
+							dialogPane.setMinHeight(130);
+							dialogPane.setMaxHeight(130);
+							dialogPane.setPrefHeight(130);
+							alert.setContentText(Constante.alert19);
+							alert.setHeaderText(null);
+							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+							alert.showAndWait();
+						}
 					}
-				} else {
-					final Alert alert = new Alert(AlertType.ERROR);
-					final DialogPane dialogPane = alert.getDialogPane();
-					dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-					dialogPane.getStyleClass().add("myDialog");
-					dialogPane.setMinHeight(130);
-					dialogPane.setMaxHeight(130);
-					dialogPane.setPrefHeight(130);
-					alert.setContentText(Constante.alert8);
-					alert.setHeaderText(null);
-					alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-					alert.showAndWait();
-				}
+				});
+
 			}
 		});
 
@@ -822,16 +1076,15 @@ public class AddXmlNode extends Application {
 		buttonDownload.setPrefHeight(30);
 		buttonDownload.setMinHeight(30);
 		buttonDownload.setMaxHeight(30);
-		buttonDownload.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		buttonDownload.setStyle(Constante.style1);
 		buttonDownload.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
 				final String url = textFieldUrl.getText();
 				runTask(taskUpdateStage, progress);
 				Platform.runLater(() -> {
-					final String home = System.getProperty("user.home");
-					final File file = new File(home + "/Downloads/" + Constante.urlFile);
+					final String home = System.getProperty(Constante.image8);
+					final File file = new File(home + Constante.image9 + Constante.urlFile);
 					try {
 						downloadUsingNIO(url, file.getAbsolutePath());
 						isOk = true;
@@ -839,8 +1092,8 @@ public class AddXmlNode extends Application {
 						e.printStackTrace();
 						final Alert alert = new Alert(AlertType.ERROR);
 						final DialogPane dialogPane = alert.getDialogPane();
-						dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-						dialogPane.getStyleClass().add("myDialog");
+						dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+						dialogPane.getStyleClass().add(Constante.dialog);
 						dialogPane.setMinHeight(150);
 						dialogPane.setMaxHeight(150);
 						dialogPane.setPrefHeight(150);
@@ -853,8 +1106,8 @@ public class AddXmlNode extends Application {
 					if (isOk == true) {
 						final Alert alert = new Alert(AlertType.INFORMATION);
 						final DialogPane dialogPane = alert.getDialogPane();
-						dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-						dialogPane.getStyleClass().add("myDialog");
+						dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+						dialogPane.getStyleClass().add(Constante.dialog);
 						dialogPane.setMinHeight(150);
 						dialogPane.setMaxHeight(150);
 						dialogPane.setPrefHeight(150);
@@ -884,8 +1137,7 @@ public class AddXmlNode extends Application {
 		button4.setPrefHeight(30);
 		button4.setMinHeight(30);
 		button4.setMaxHeight(30);
-		button4.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		button4.setStyle(Constante.style1);
 		button4.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
@@ -897,8 +1149,8 @@ public class AddXmlNode extends Application {
 					} else {
 						final Alert alert = new Alert(AlertType.ERROR);
 						final DialogPane dialogPane = alert.getDialogPane();
-						dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-						dialogPane.getStyleClass().add("myDialog");
+						dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+						dialogPane.getStyleClass().add(Constante.dialog);
 						dialogPane.setMinHeight(130);
 						dialogPane.setMaxHeight(130);
 						dialogPane.setPrefHeight(130);
@@ -915,8 +1167,7 @@ public class AddXmlNode extends Application {
 		button3.setPrefHeight(30);
 		button3.setMinHeight(30);
 		button3.setMaxHeight(30);
-		button3.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		button3.setStyle(Constante.style1);
 		button3.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
@@ -937,16 +1188,15 @@ public class AddXmlNode extends Application {
 		button1.setPrefHeight(30);
 		button1.setMinHeight(30);
 		button1.setMaxHeight(30);
-		button1.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		button1.setStyle(Constante.style1);
 		button1.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
 				if (finalFiles.isEmpty()) {
 					final Alert alert = new Alert(AlertType.ERROR);
 					final DialogPane dialogPane = alert.getDialogPane();
-					dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-					dialogPane.getStyleClass().add("myDialog");
+					dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+					dialogPane.getStyleClass().add(Constante.dialog);
 					dialogPane.setMinHeight(130);
 					dialogPane.setMaxHeight(130);
 					dialogPane.setPrefHeight(130);
@@ -959,8 +1209,8 @@ public class AddXmlNode extends Application {
 								|| getExtension(finalFiles.get(0).getAbsolutePath()).equals(Constante.xlsm))) {
 					final Alert alert = new Alert(AlertType.ERROR);
 					final DialogPane dialogPane = alert.getDialogPane();
-					dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-					dialogPane.getStyleClass().add("myDialog");
+					dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+					dialogPane.getStyleClass().add(Constante.dialog);
 					dialogPane.setMinHeight(130);
 					dialogPane.setMaxHeight(130);
 					dialogPane.setPrefHeight(130);
@@ -1000,20 +1250,20 @@ public class AddXmlNode extends Application {
 										}
 									}
 								}
-								NodeList nodesC = doc.getElementsByTagName("Concept");
+								final NodeList nodesC = doc.getElementsByTagName("Concept");
 								if (nodesC != null) {
 									for (int n = 0; n < nodesC.getLength(); n++) {
 										if (nodesC.item(n) instanceof Element) {
-											Element elem = (Element) nodesC.item(n);
+											final Element elem = (Element) nodesC.item(n);
 											doc.renameNode(elem, elem.getNamespaceURI(), "concept");
 										}
 									}
 								}
-								NodeList listOfStaff = doc.getElementsByTagName("ValueSet");
+								final NodeList listOfStaff = doc.getElementsByTagName("ValueSet");
 								if (listOfStaff != null) {
 									for (int i = 0; i < listOfStaff.getLength(); i++) {
 										if (listOfStaff.item(i) instanceof Element) {
-											Element elem = (Element) listOfStaff.item(i);
+											final Element elem = (Element) listOfStaff.item(i);
 											doc.renameNode(elem, elem.getNamespaceURI(), "valueSet");
 										}
 
@@ -1047,45 +1297,50 @@ public class AddXmlNode extends Application {
 											((Element) importedNode).setAttribute("versionLabel", "");
 										}
 
-										org.w3c.dom.Node att = importedNode.getAttributes().getNamedItem("version");
+										final org.w3c.dom.Node att = importedNode.getAttributes()
+												.getNamedItem("version");
 										if (att != null) {
 											importedNode.getAttributes().removeNamedItem(att.getNodeName());
 										}
-										org.w3c.dom.Node att1 = importedNode.getAttributes().getNamedItem("dateFin");
+										final org.w3c.dom.Node att1 = importedNode.getAttributes()
+												.getNamedItem("dateFin");
 										if (att1 != null) {
 											importedNode.getAttributes().removeNamedItem(att1.getNodeName());
 										}
-										org.w3c.dom.Node att2 = importedNode.getAttributes().getNamedItem("dateMaj");
+										final org.w3c.dom.Node att2 = importedNode.getAttributes()
+												.getNamedItem("dateMaj");
 										if (att2 != null) {
 											importedNode.getAttributes().removeNamedItem(att2.getNodeName());
 										}
-										org.w3c.dom.Node att3 = importedNode.getAttributes().getNamedItem("dateValid");
+										final org.w3c.dom.Node att3 = importedNode.getAttributes()
+												.getNamedItem("dateValid");
 										if (att3 != null) {
 											importedNode.getAttributes().removeNamedItem(att3.getNodeName());
 										}
-										org.w3c.dom.Node att4 = importedNode.getAttributes()
+										final org.w3c.dom.Node att4 = importedNode.getAttributes()
 												.getNamedItem("description");
 										if (att4 != null) {
 											importedNode.getAttributes().removeNamedItem(att4.getNodeName());
 										}
-										org.w3c.dom.Node att5 = importedNode.getAttributes()
+										final org.w3c.dom.Node att5 = importedNode.getAttributes()
 												.getNamedItem("typeFichier");
 										if (att5 != null) {
 											importedNode.getAttributes().removeNamedItem(att5.getNodeName());
 										}
-										org.w3c.dom.Node att6 = importedNode.getAttributes().getNamedItem("urlFichier");
+										final org.w3c.dom.Node att6 = importedNode.getAttributes()
+												.getNamedItem("urlFichier");
 										if (att6 != null) {
 											importedNode.getAttributes().removeNamedItem(att6.getNodeName());
 										}
 
-										NodeList list = importedNode.getChildNodes();
+										final NodeList list = importedNode.getChildNodes();
 										if (list != null) {
 											for (int j = 0; j < list.getLength(); j++) {
-												org.w3c.dom.Node staf = list.item(j);
-												NodeList listk = staf.getChildNodes();
+												final org.w3c.dom.Node staf = list.item(j);
+												final NodeList listk = staf.getChildNodes();
 												if (listk != null) {
 													for (int k = 0; k < listk.getLength(); k++) {
-														org.w3c.dom.Node item = listk.item(k);
+														final org.w3c.dom.Node item = listk.item(k);
 														if (item.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
 															if (textFieldL != null) {
 																if (textFieldL.getText() != null) {
@@ -1107,19 +1362,18 @@ public class AddXmlNode extends Application {
 															} else {
 																((Element) item).setAttribute("type", "");
 															}
-															org.w3c.dom.Node att7 = item.getAttributes()
+															final org.w3c.dom.Node att7 = item.getAttributes()
 																	.getNamedItem("dateFin");
 															if (att7 != null) {
 																item.getAttributes()
 																		.removeNamedItem(att7.getNodeName());
 															}
-															org.w3c.dom.Node att8 = item.getAttributes()
+															final org.w3c.dom.Node att8 = item.getAttributes()
 																	.getNamedItem("dateValid");
 															if (att8 != null) {
 																item.getAttributes()
 																		.removeNamedItem(att8.getNodeName());
 															}
-
 														}
 													}
 												}
@@ -1151,8 +1405,9 @@ public class AddXmlNode extends Application {
 							if (isOkGenerate == true) {
 								final Alert alert = new Alert(AlertType.INFORMATION);
 								final DialogPane dialogPane = alert.getDialogPane();
-								dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-								dialogPane.getStyleClass().add("myDialog");
+								dialogPane.getStylesheets()
+										.add(getClass().getResource(Constante.style).toExternalForm());
+								dialogPane.getStyleClass().add(Constante.dialog);
 								dialogPane.setMinHeight(130);
 								dialogPane.setMaxHeight(130);
 								dialogPane.setPrefHeight(130);
@@ -1179,7 +1434,6 @@ public class AddXmlNode extends Application {
 					listB.getCheckModel().clearChecks();
 					selectAll.setSelected(false);
 					hb.setVisible(false);
-
 				}
 			}
 		});
@@ -1219,16 +1473,16 @@ public class AddXmlNode extends Application {
 		pane.setLeft(listB);
 		pane.setRight(list);
 
-		listB.setStyle("-fx-border-color: #98bb68; -fx-border-radius: 5;");
-		list.setStyle("-fx-border-color: #98bb68; -fx-border-radius: 5;");
+		listB.setStyle(Constante.style9);
+		list.setStyle(Constante.style9);
 
 		final SplitPane sp = new SplitPane();
-		sp.setStyle("-fx-box-border: 0px;");
+		sp.setStyle(Constante.style10);
 		sp.setOrientation(Orientation.HORIZONTAL);
 		sp.setDividerPositions(0f, 0.9f);
 
 		final VBox root1 = new VBox(hbox1, hbox2, hbox3);
-		root1.setStyle("-fx-border-color: #98bb68; -fx-border-radius: 5;");
+		root1.setStyle(Constante.style9);
 		sp.getItems().addAll(hBoxImg, root1);
 
 		final VBox root = new VBox(menuBar, sp, hbox, hb, pane);
@@ -1237,19 +1491,17 @@ public class AddXmlNode extends Application {
 		button10.setPrefHeight(30);
 		button10.setMinHeight(30);
 		button10.setMaxHeight(30);
-		button10.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		button10.setStyle(Constante.style1);
 		button10.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
-
 				runTask(taskUpdateStage, progress);
 				Platform.runLater(() -> {
 					if (files.isEmpty()) {
 						final Alert alert = new Alert(AlertType.ERROR);
 						final DialogPane dialogPane = alert.getDialogPane();
-						dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-						dialogPane.getStyleClass().add("myDialog");
+						dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+						dialogPane.getStyleClass().add(Constante.dialog);
 						dialogPane.setMinHeight(130);
 						dialogPane.setMaxHeight(130);
 						dialogPane.setPrefHeight(130);
@@ -1258,110 +1510,110 @@ public class AddXmlNode extends Application {
 						alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
 						alert.showAndWait();
 					} else {
-						for (File file : files) {
-							String ext = getExtension(file.getAbsolutePath());
+						for (final File file : files) {
+							final String ext = getExtension(file.getAbsolutePath());
 							if (ext.equals(Constante.xlsm) || ext.equals(Constante.xlsx)) {
 								// Create a Workbook instance
-								Workbook workbook = new Workbook();
+								final Workbook workbook = new Workbook();
 								// Load an Excel file
 								workbook.loadFromFile(file.getAbsolutePath());
-								Worksheet worksheet = workbook.getWorksheets().get(3);
-								Worksheet worksheet1 = workbook.getWorksheets().get(6);
+								final Worksheet worksheet = workbook.getWorksheets().get(3);
+								final Worksheet worksheet1 = workbook.getWorksheets().get(6);
 								List<RetrieveValueSetResponse> listR = new ArrayList<RetrieveValueSetResponse>();
 								// Get the row count
-								int maxRow = worksheet.getLastRow();
+								final int maxRow = worksheet.getLastRow();
 								// Get the column count
-								int maxColumn = worksheet.getLastColumn();
+								final int maxColumn = worksheet.getLastColumn();
 								// Loop through the rows
 								for (int row = 2; row <= maxRow; row++) {
-									boolean hide = worksheet.getRowIsHide(row);
-									if (hide == false) {
-										RetrieveValueSetResponse response = new RetrieveValueSetResponse();
-										// Loop through the columns
-										for (int col = 1; col <= maxColumn; col++) {
-											// Get the current cell
-											CellRange cell = worksheet.getCellRange(row, col);
-											if (cell.getCellStyle().getExcelFont().isStrikethrough() == false) {
-												if (col == 1) {
-													response.setValueSetOID(cell.getValue());
-												}
-												if (col == 2) {
-													response.setValueSetName(cell.getValue());
-												}
-												if (col == 3) {
-													response.setCode(cell.getValue());
-												}
-												if (col == 4) {
-													response.setDisplayName(cell.getValue());
-												}
-												if (col == 5) {
-													response.setCodeSystemName(cell.getValue());
-												}
-												if (col == 6) {
-													response.setCodeSystem(cell.getValue());
-												}
-												if (col == 7) {
-													response.setDateDebut(cell.getValue());
-												}
-												if (col == 8) {
-													response.setDateFin(cell.getValue());
-												}
-											} else {
-												break;
-											}
+//									boolean hide = worksheet.getRowIsHide(row);
+//									if (hide == false) {
+									RetrieveValueSetResponse response = new RetrieveValueSetResponse();
+									// Loop through the columns
+									for (int col = 1; col <= maxColumn; col++) {
+										// Get the current cell
+										CellRange cell = worksheet.getCellRange(row, col);
+//											if (cell.getCellStyle().getExcelFont().isStrikethrough() == false) {
+										if (col == 1) {
+											response.setValueSetOID(cell.getValue());
 										}
-										if (response.getValueSetOID() != null) {
-											listR.add(response);
+										if (col == 2) {
+											response.setValueSetName(cell.getValue());
 										}
+										if (col == 3) {
+											response.setCode(cell.getValue());
+										}
+										if (col == 4) {
+											response.setDisplayName(cell.getValue());
+										}
+										if (col == 5) {
+											response.setCodeSystemName(cell.getValue());
+										}
+										if (col == 6) {
+											response.setCodeSystem(cell.getValue());
+										}
+										if (col == 7) {
+											response.setDateDebut(cell.getValue());
+										}
+										if (col == 8) {
+											response.setDateFin(cell.getValue());
+										}
+//											} else {
+//												break;
+//											}
 									}
+									if (response.getValueSetOID() != null) {
+										listR.add(response);
+									}
+//									}
 								}
 
 								// Get the row count
-								int maxRow1 = worksheet1.getLastRow();
+								final int maxRow1 = worksheet1.getLastRow();
 								// Get the column count
-								int maxColumn1 = worksheet1.getLastColumn();
+								final int maxColumn1 = worksheet1.getLastColumn();
 								// Loop through the rows
 								for (int row = 2; row <= maxRow1; row++) {
-									boolean hide = worksheet1.getRowIsHide(row);
-									if (hide == false) {
-										RetrieveValueSetResponse response = new RetrieveValueSetResponse();
-										// Loop through the columns
-										for (int col = 1; col <= maxColumn1; col++) {
-											// Get the current cell
-											CellRange cell = worksheet1.getCellRange(row, col);
-											if (cell.getCellStyle().getExcelFont().isStrikethrough() == false) {
-												if (col == 1) {
-													response.setValueSetOID(cell.getValue());
-												}
-												if (col == 2) {
-													response.setValueSetName(cell.getValue());
-												}
-												if (col == 3) {
-													response.setCode(cell.getValue());
-												}
-												if (col == 4) {
-													response.setDisplayName(cell.getValue());
-												}
-												if (col == 5) {
-													response.setCodeSystemName(cell.getValue());
-												}
-												if (col == 6) {
-													response.setCodeSystem(cell.getValue());
-												}
-												if (col == 7) {
-													response.setDateDebut(cell.getValue());
-												}
-												if (col == 8) {
-													response.setDateFin(cell.getValue());
-												}
-											} else {
-												break;
-											}
+//									final boolean hide = worksheet1.getRowIsHide(row);
+//									if (hide == false) {
+									RetrieveValueSetResponse response = new RetrieveValueSetResponse();
+									// Loop through the columns
+									for (int col = 1; col <= maxColumn1; col++) {
+										// Get the current cell
+										final CellRange cell = worksheet1.getCellRange(row, col);
+//											if (cell.getCellStyle().getExcelFont().isStrikethrough() == false) {
+										if (col == 1) {
+											response.setValueSetOID(cell.getValue());
 										}
-										if (response.getValueSetOID() != null) {
-											listR.add(response);
+										if (col == 2) {
+											response.setValueSetName(cell.getValue());
 										}
+										if (col == 3) {
+											response.setCode(cell.getValue());
+										}
+										if (col == 4) {
+											response.setDisplayName(cell.getValue());
+										}
+										if (col == 5) {
+											response.setCodeSystemName(cell.getValue());
+										}
+										if (col == 6) {
+											response.setCodeSystem(cell.getValue());
+										}
+										if (col == 7) {
+											response.setDateDebut(cell.getValue());
+										}
+										if (col == 8) {
+											response.setDateFin(cell.getValue());
+										}
+//											} else {
+//												break;
+//											}
 									}
+									if (response.getValueSetOID() != null) {
+										listR.add(response);
+									}
+//									}
 								}
 
 								Boolean isOk = false;
@@ -1376,15 +1628,15 @@ public class AddXmlNode extends Application {
 									List<RetrieveValueSetResponse> result2 = new ArrayList<RetrieveValueSetResponse>(
 											(List<RetrieveValueSetResponse>) mapentry.getValue());
 									isOk = CreateXMLFile.createXMLFile(result2, textFieldPS.getText());
-									File f = CreateXMLFile.getCreatedFile();
+									final File f = CreateXMLFile.getCreatedFile();
 									listF.add(f);
 								}
 								if (isOk == true) {
 									final Alert alert = new Alert(AlertType.INFORMATION);
 									final DialogPane dialogPane = alert.getDialogPane();
 									dialogPane.getStylesheets()
-											.add(getClass().getResource("/style.css").toExternalForm());
-									dialogPane.getStyleClass().add("myDialog");
+											.add(getClass().getResource(Constante.style).toExternalForm());
+									dialogPane.getStyleClass().add(Constante.dialog);
 									dialogPane.setMinHeight(130);
 									dialogPane.setMaxHeight(130);
 									dialogPane.setPrefHeight(130);
@@ -1397,16 +1649,15 @@ public class AddXmlNode extends Application {
 									list.getItems().clear();
 
 								}
-
 								workbook.dispose();
 							}
 						}
-						for (File pathname : listF) {
+						for (final File pathname : listF) {
 							files.add(pathname);
 						}
 
 						if (files != null) {
-							ObservableList<File> oblist = FXCollections.observableArrayList();
+							final ObservableList<File> oblist = FXCollections.observableArrayList();
 							for (int i = 0; i < files.size(); i++) {
 								oblist.add(files.get(i));
 							}
@@ -1451,10 +1702,11 @@ public class AddXmlNode extends Application {
 
 		list.setPrefHeight(650);
 
+		// scene principal pour le convertisseur
 		final Scene scene = new Scene(root, Color.BEIGE);
-		scene.getRoot().getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+		scene.getRoot().getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
 		stage.getIcons().add(new Image(getClass().getClassLoader().getResourceAsStream(Constante.photo)));
-		stage.setTitle("Convertisseur JDV");
+		stage.setTitle(Constante.name);
 		stage.setScene(scene);
 		stage.setMaximized(true);
 		stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
@@ -1470,6 +1722,13 @@ public class AddXmlNode extends Application {
 						primaryStage.close();
 					}
 				}
+				if (thirdStage != null) {
+					if (thirdStage.isShowing()) {
+						thirdStage.close();
+						textLogin.setText("");
+						textPwd.setText("");
+					}
+				}
 			}
 		});
 
@@ -1478,28 +1737,30 @@ public class AddXmlNode extends Application {
 			public void changed(ObservableValue<? extends Number> observableValue, Number oldSceneWidth,
 					Number newSceneWidth) {
 				if (newSceneWidth.doubleValue() >= 1509 && newSceneWidth.doubleValue() < 1632) { // ecran 16 pouces
-					button1.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					button10.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					button2.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					button3.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					button4.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					buttonDownload.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					buttonTermino.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					button1.setStyle(Constante.style1);
+					button10.setStyle(Constante.style1);
+					button2.setStyle(Constante.style1);
+					button3.setStyle(Constante.style1);
+					button4.setStyle(Constante.style1);
+					buttonDownload.setStyle(Constante.style1);
 					buttonDownload.setPrefWidth(250);
 					buttonDownload.setPrefHeight(30);
 					buttonDownload.setMinHeight(30);
 					buttonDownload.setMaxHeight(30);
+					buttonTermino.setStyle(Constante.style1);
 					buttonTermino.setPrefWidth(230);
 					buttonTermino.setPrefHeight(30);
 					buttonTermino.setMinHeight(30);
 					buttonTermino.setMaxHeight(30);
+					buttonTermino1.setPrefWidth(200);
+					buttonTermino1.setPrefHeight(30);
+					buttonTermino1.setMinHeight(30);
+					buttonTermino1.setMaxHeight(30);
+					buttonTermino1.setStyle(Constante.style1);
+					textPwd.setStyle(Constante.style8);
+					textLogin.setStyle(Constante.style8);
+					labelPwd.setStyle(Constante.style5);
+					labelLog.setStyle(Constante.style5);
 					button1.setPrefWidth(160);
 					button1.setPrefHeight(30);
 					button1.setMinHeight(30);
@@ -1520,52 +1781,46 @@ public class AddXmlNode extends Application {
 					button4.setPrefHeight(30);
 					button4.setMinHeight(30);
 					button4.setMaxHeight(30);
+					textFieldUrl.setPrefWidth(680);
 					list.setPrefWidth((newSceneWidth.doubleValue() - 10) / 2);
 					listB.setPrefWidth((newSceneWidth.doubleValue() - 10) / 2);
 					pane.setPrefWidth(width);
-					label.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					label1.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					label2.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textField2.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelL.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldL.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelT.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldT.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelP.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldP.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelPS.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldPS.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelUrl.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldUrl.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelEmpty.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					comboBox.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					picker.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					file.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					item.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					label.setStyle(Constante.style5);
+					label1.setStyle(Constante.style5);
+					label2.setStyle(Constante.style5);
+					textField2.setStyle(Constante.style5);
+					labelL.setStyle(Constante.style5);
+					textFieldL.setStyle(Constante.style5);
+					labelT.setStyle(Constante.style5);
+					textFieldT.setStyle(Constante.style5);
+					labelP.setStyle(Constante.style5);
+					textFieldP.setStyle(Constante.style5);
+					labelPS.setStyle(Constante.style5);
+					textFieldPS.setStyle(Constante.style5);
+					labelUrl.setStyle(Constante.style5);
+					textFieldUrl.setStyle(Constante.style5);
+					labelEmpty.setStyle(Constante.style5);
+					comboBox.setStyle(Constante.style5);
+					picker.setStyle(Constante.style5);
+					file.setStyle(Constante.style2);
+					item.setStyle(Constante.style2);
 					imageView.setFitWidth(120);
 					imageView.setFitHeight(120);
-					file.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					item.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					item1.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					apropos.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					item2.setStyle("-fx-font-size: 13; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					file.setStyle(Constante.style2);
+					item.setStyle(Constante.style2);
+					item1.setStyle(Constante.style2);
+					apropos.setStyle(Constante.style2);
+					item2.setStyle(Constante.style2);
 
 				}
 				if (newSceneWidth.doubleValue() >= 1632 && newSceneWidth.doubleValue() <= 1728) { // ecran 17 pouces
-					button1.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					button10.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					button2.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					button3.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					button4.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					buttonDownload.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					buttonTermino.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					button1.setStyle(Constante.style3);
+					button10.setStyle(Constante.style3);
+					button2.setStyle(Constante.style3);
+					button3.setStyle(Constante.style3);
+					button4.setStyle(Constante.style3);
+					buttonDownload.setStyle(Constante.style3);
+					buttonTermino.setStyle(Constante.style3);
 					buttonDownload.setPrefWidth(280);
 					buttonDownload.setPrefHeight(50);
 					buttonDownload.setMinHeight(50);
@@ -1574,6 +1829,15 @@ public class AddXmlNode extends Application {
 					buttonTermino.setPrefHeight(50);
 					buttonTermino.setMinHeight(50);
 					buttonTermino.setMaxHeight(50);
+					buttonTermino1.setPrefWidth(230);
+					buttonTermino1.setPrefHeight(50);
+					buttonTermino1.setMinHeight(50);
+					buttonTermino1.setMaxHeight(50);
+					buttonTermino1.setStyle(Constante.style3);
+					textPwd.setStyle(Constante.style11);
+					textLogin.setStyle(Constante.style11);
+					labelPwd.setStyle(Constante.style11);
+					labelLog.setStyle(Constante.style11);
 					button1.setPrefWidth(180);
 					button1.setPrefHeight(50);
 					button1.setMinHeight(50);
@@ -1592,53 +1856,47 @@ public class AddXmlNode extends Application {
 					button3.setMaxHeight(50);
 					button4.setPrefWidth(300);
 					button4.setPrefHeight(50);
+					textFieldUrl.setPrefWidth(750);
 					button4.setMinHeight(50);
 					button4.setMaxHeight(50);
 					list.setPrefWidth((newSceneWidth.doubleValue() - 10) / 2);
 					listB.setPrefWidth((newSceneWidth.doubleValue() - 10) / 2);
 					pane.setPrefWidth(width);
-					label.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					label1.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					label2.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textField2.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelL.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldL.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelT.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldT.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelP.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldP.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelPS.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldPS.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelUrl.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldUrl.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelEmpty.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					comboBox.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					picker.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					file.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					item.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					label.setStyle(Constante.style11);
+					label1.setStyle(Constante.style11);
+					label2.setStyle(Constante.style11);
+					textField2.setStyle(Constante.style11);
+					labelL.setStyle(Constante.style11);
+					textFieldL.setStyle(Constante.style11);
+					labelT.setStyle(Constante.style11);
+					textFieldT.setStyle(Constante.style11);
+					labelP.setStyle(Constante.style11);
+					textFieldP.setStyle(Constante.style11);
+					labelPS.setStyle(Constante.style11);
+					textFieldPS.setStyle(Constante.style11);
+					labelUrl.setStyle(Constante.style11);
+					textFieldUrl.setStyle(Constante.style11);
+					labelEmpty.setStyle(Constante.style11);
+					comboBox.setStyle(Constante.style11);
+					picker.setStyle(Constante.style11);
+					file.setStyle(Constante.style12);
+					item.setStyle(Constante.style12);
 					imageView.setFitWidth(140);
 					imageView.setFitHeight(140);
-					file.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					item.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					item1.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					apropos.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					item2.setStyle("-fx-font-size: 15; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					file.setStyle(Constante.style12);
+					item.setStyle(Constante.style12);
+					item1.setStyle(Constante.style12);
+					apropos.setStyle(Constante.style12);
+					item2.setStyle(Constante.style12);
 
 				} else if (newSceneWidth.doubleValue() < 1509) {
-					button1.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					button10.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					button2.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					button3.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					button4.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					buttonDownload.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					buttonTermino.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da  ;-fx-font-size: 9; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					button1.setStyle(Constante.style13);
+					button10.setStyle(Constante.style13);
+					button2.setStyle(Constante.style13);
+					button3.setStyle(Constante.style13);
+					button4.setStyle(Constante.style13);
+					buttonDownload.setStyle(Constante.style13);
+					buttonTermino.setStyle(Constante.style13);
 					buttonDownload.setPrefWidth(200);
 					buttonDownload.setPrefHeight(20);
 					buttonDownload.setMinHeight(20);
@@ -1647,6 +1905,16 @@ public class AddXmlNode extends Application {
 					buttonTermino.setPrefHeight(20);
 					buttonTermino.setMinHeight(20);
 					buttonTermino.setMaxHeight(20);
+					buttonTermino1.setPrefWidth(130);
+					buttonTermino1.setPrefHeight(20);
+					buttonTermino1.setMinHeight(20);
+					buttonTermino1.setMaxHeight(20);
+					buttonTermino1.setStyle(Constante.style13);
+					textPwd.setStyle(Constante.style14);
+					textLogin.setStyle(Constante.style14);
+					labelPwd.setStyle(Constante.style14);
+					labelLog.setStyle(Constante.style14);
+					textFieldUrl.setPrefWidth(550);
 					button1.setPrefWidth(120);
 					button1.setPrefHeight(20);
 					button1.setMinHeight(20);
@@ -1670,37 +1938,35 @@ public class AddXmlNode extends Application {
 					list.setPrefWidth((newSceneWidth.doubleValue() - 10) / 2);
 					listB.setPrefWidth((newSceneWidth.doubleValue() - 10) / 2);
 					pane.setPrefWidth(width);
-					label.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					label1.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					label2.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textField2.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelL.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldL.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelT.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldT.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelP.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldP.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelPS.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldPS.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelUrl.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					textFieldUrl.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelEmpty.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					comboBox.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					picker.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					file.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					item.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					label.setStyle(Constante.style14);
+					label1.setStyle(Constante.style14);
+					label2.setStyle(Constante.style14);
+					textField2.setStyle(Constante.style14);
+					labelL.setStyle(Constante.style14);
+					textFieldL.setStyle(Constante.style14);
+					labelT.setStyle(Constante.style14);
+					textFieldT.setStyle(Constante.style14);
+					labelP.setStyle(Constante.style14);
+					textFieldP.setStyle(Constante.style14);
+					labelPS.setStyle(Constante.style14);
+					textFieldPS.setStyle(Constante.style14);
+					labelUrl.setStyle(Constante.style14);
+					textFieldUrl.setStyle(Constante.style14);
+					labelEmpty.setStyle(Constante.style14);
+					comboBox.setStyle(Constante.style14);
+					picker.setStyle(Constante.style14);
+					file.setStyle(Constante.style15);
+					item.setStyle(Constante.style15);
 					imageView.setFitWidth(100);
 					imageView.setFitHeight(100);
-					file.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					item.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					item1.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					apropos.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					item2.setStyle("-fx-font-size: 11; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					file.setStyle(Constante.style15);
+					item.setStyle(Constante.style15);
+					item1.setStyle(Constante.style15);
+					apropos.setStyle(Constante.style15);
+					item2.setStyle(Constante.style15);
 				}
-				System.out.println(newSceneWidth.doubleValue());
 			}
 		});
-
 		stage.show();
 	}
 
@@ -1721,7 +1987,7 @@ public class AddXmlNode extends Application {
 		transformer.setOutputProperty(OutputKeys.METHOD, Constante.xml);
 		transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, Constante.yes);
 		final ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-		final InputStream is = classloader.getResourceAsStream("prettyprint.xsl");
+		final InputStream is = classloader.getResourceAsStream(Constante.pretty);
 		transformer = transformerFactory.newTransformer(new StreamSource((is)));
 		final DOMSource source = new DOMSource(doc);
 		final StreamResult result = new StreamResult(output);
@@ -1760,9 +2026,9 @@ public class AddXmlNode extends Application {
 	 * @throws IOException
 	 */
 	private static void downloadUsingNIO(final String urlStr, final String file) throws IOException {
-		URL url = new URL(urlStr);
-		ReadableByteChannel rbc = Channels.newChannel(url.openStream());
-		FileOutputStream fos = new FileOutputStream(file);
+		final URL url = new URL(urlStr);
+		final ReadableByteChannel rbc = Channels.newChannel(url.openStream());
+		final FileOutputStream fos = new FileOutputStream(file);
 		fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
 		fos.close();
 		rbc.close();
@@ -1774,7 +2040,7 @@ public class AddXmlNode extends Application {
 	 * @param fname
 	 * @return
 	 */
-	public static String removeExtension(String fname) {
+	public static String removeExtension(final String fname) {
 		int pos = fname.lastIndexOf('.');
 		if (pos > -1)
 			return fname.substring(0, pos);
@@ -1790,8 +2056,7 @@ public class AddXmlNode extends Application {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-
-	public static void unzip(String zipFilePath, String destFilePath) throws IOException {
+	public static void unzip(final String zipFilePath, final String destFilePath) throws IOException {
 		final File destination_Directory = new File(destFilePath);
 		if (!destination_Directory.exists()) {
 			destination_Directory.mkdir();
@@ -1874,7 +2139,7 @@ public class AddXmlNode extends Application {
 	 */
 	private static String extractFile(final ZipInputStream zip_Input_Stream, final String file_Path)
 			throws IOException {
-		BufferedOutputStream buffered_Output_Stream = new BufferedOutputStream(new FileOutputStream(file_Path));
+		final BufferedOutputStream buffered_Output_Stream = new BufferedOutputStream(new FileOutputStream(file_Path));
 		byte[] bytes = new byte[BUFFER_SIZE];
 		int read_Byte = 0;
 		while ((read_Byte = zip_Input_Stream.read(bytes)) != -1) {
@@ -1893,10 +2158,10 @@ public class AddXmlNode extends Application {
 	 * @throws SAXException
 	 * @throws IOException
 	 */
-	private Document parseXML(String filePath) throws ParserConfigurationException, SAXException, IOException {
-		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-		DocumentBuilder db = dbf.newDocumentBuilder();
-		Document doc = db.parse(filePath);
+	private Document parseXML(final String filePath) throws ParserConfigurationException, SAXException, IOException {
+		final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		final DocumentBuilder db = dbf.newDocumentBuilder();
+		final Document doc = db.parse(filePath);
 		doc.getDocumentElement().normalize();
 		return doc;
 	}
@@ -1909,15 +2174,14 @@ public class AddXmlNode extends Application {
 	 */
 	public static final void prettyPrint(final Document xml, final String path, final String dest) throws Exception {
 		final Source source = new DOMSource(xml);
-
-		final File f = new File(path + "\\terminologie");
+		final File f = new File(path + Constante.termino);
 		if (!f.exists()) {
 			f.mkdir();
 		}
-		if (new File(path + "\\terminologie\\" + dest + ".rdf").exists()) {
-			new File(path + "\\terminologie\\" + dest + ".rdf").delete();
+		if (new File(path + Constante.terminologie + dest + Constante.extRdf).exists()) {
+			new File(path + Constante.terminologie + dest + Constante.extRdf).delete();
 		}
-		final File xmlFile = new File(path + "\\terminologie\\" + dest + ".rdf");
+		final File xmlFile = new File(path + Constante.terminologie + dest + Constante.extRdf);
 		final StreamResult result = new StreamResult(
 				new OutputStreamWriter(new FileOutputStream(xmlFile), Constante.utf8));
 		final Transformer xformer = TransformerFactory.newInstance().newTransformer();
@@ -1931,7 +2195,7 @@ public class AddXmlNode extends Application {
 	 * 
 	 * @param node
 	 */
-	public static org.w3c.dom.Node removeAllChildren(org.w3c.dom.Node node) {
+	public static org.w3c.dom.Node removeAllChildren(final org.w3c.dom.Node node) {
 		removeAllChilderenWithoutHeader(node);
 		return node;
 	}
@@ -1942,28 +2206,27 @@ public class AddXmlNode extends Application {
 	 * @param node
 	 * @param remainChildCount
 	 */
-	public static void removeAllChilderenWithoutHeader(org.w3c.dom.Node node) {
+	public static void removeAllChilderenWithoutHeader(final org.w3c.dom.Node node) {
 		final NodeList childNodes = node.getChildNodes();
 		List<org.w3c.dom.Node> removeNodeList = new ArrayList<org.w3c.dom.Node>();
 		for (int i = 0; i < childNodes.getLength(); i++) {
 			removeNodeList.add(childNodes.item(i));
 		}
-
-		for (org.w3c.dom.Node childNode : removeNodeList) {
+		for (final org.w3c.dom.Node childNode : removeNodeList) {
 			node.removeChild(childNode);
 		}
 	}
 
 	/**
-	 * initialize
+	 * initialize screen
 	 * 
 	 * @param file
 	 */
 	public void init(final File file) {
 		final Alert alert = new Alert(AlertType.ERROR);
 		final DialogPane dialogPane = alert.getDialogPane();
-		dialogPane.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-		dialogPane.getStyleClass().add("myDialog");
+		dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+		dialogPane.getStyleClass().add(Constante.dialog);
 		dialogPane.setMinHeight(150);
 		dialogPane.setMaxHeight(150);
 		dialogPane.setPrefHeight(150);
@@ -1987,8 +2250,9 @@ public class AddXmlNode extends Application {
 	 * @param selectedFile
 	 * @throws IOException
 	 */
-	private String readFileContents(final File file) throws IOException {
-		final BufferedReader br = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8));
+	private String readFileContents(final InputStream file) throws IOException {
+
+		final BufferedReader br = new BufferedReader(new InputStreamReader(file));
 		String singleString = null;
 
 		try {
@@ -2004,6 +2268,20 @@ public class AddXmlNode extends Application {
 			br.close();
 		}
 		return singleString;
+	}
+
+	/**
+	 * deleteDirectory
+	 * 
+	 * @param directoryToBeDeleted
+	 * @return
+	 */
+	public void deleteDirectory(final File directoryToBeDeleted) {
+		try {
+			FileUtils.cleanDirectory(directoryToBeDeleted);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**

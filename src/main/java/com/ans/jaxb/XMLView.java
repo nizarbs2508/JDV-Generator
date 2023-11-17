@@ -182,7 +182,7 @@ public class XMLView extends Application {
 	 */
 	@Override
 	public void start(Stage stage) {
-		TextField autoComplete = new TextField();
+		final TextField autoComplete = new TextField();
 		// Start ProgressBar creation
 		final double wndwWidth = 150.0d;
 		final double wndhHeigth = 150.0d;
@@ -195,7 +195,7 @@ public class XMLView extends Application {
 		updatePane.setSpacing(5.0d);
 		updatePane.setAlignment(Pos.CENTER);
 		updatePane.getChildren().addAll(progress);
-		updatePane.setStyle("-fx-background-color: #FFFAFA");
+		updatePane.setStyle(Constante.style4);
 		final Stage taskUpdateStage = new Stage(StageStyle.UNDECORATED);
 		taskUpdateStage.setScene(new Scene(updatePane, 170, 170));
 		// End progressBar
@@ -205,7 +205,7 @@ public class XMLView extends Application {
 			createDemo(file);
 		}
 		treeTableView = createTreeTableView(file);
-		treeTableView.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		treeTableView.setStyle(Constante.style11);
 		treeTableView.setPrefWidth(755);
 		final BorderPane layout = new BorderPane();
 		final Region spacer2 = new Region();
@@ -217,25 +217,23 @@ public class XMLView extends Application {
 		layout.setLeft(treeTableView);
 		textArea.setText(readFileContents(file));
 		textArea.setEditable(false);
-		textArea.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+		textArea.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
 		textArea.getStyleClass().add("text-area");
 		textArea.setPrefWidth(755);
 		layout.setRight(textArea);
 		HBox hbox = new HBox();
-		Image img = new Image("UIControls/collapse.png");
-		ImageView view = new ImageView(img);
+		
+		final Image img = new Image(Constante.image15);
+		final ImageView view = new ImageView(img);
 		view.setPreserveRatio(true);
 		ObservableList<javafx.scene.Node> listHint = hbox.getChildren();
 		collapseAll.setGraphic(view);
-		collapseAll.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		collapseAll.setStyle(Constante.style16);
 
 		collapseAll.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-
 				if (collapseAll.getText().equals(Constante.reduire)) {
-
 					collapseAll.setText(Constante.expand);
 					collapseTreeView(root);
 				} else if (collapseAll.getText().equals(Constante.expand)) {
@@ -249,30 +247,29 @@ public class XMLView extends Application {
 		});
 
 		HBox hb = new HBox();
-		ObservableList<javafx.scene.Node> lhb = hb.getChildren();
+		final ObservableList<javafx.scene.Node> lhb = hb.getChildren();
 		lhb.add(collapseAll);
 		hb.setAlignment(Pos.CENTER_RIGHT);
 
-		Image img1 = new Image("UIControls/refresh.png");
-		ImageView view1 = new ImageView(img1);
+		final Image img1 = new Image(Constante.image16);
+		final ImageView view1 = new ImageView(img1);
 		view1.setPreserveRatio(true);
 		refresh.setGraphic(view1);
 		refresh.setAlignment(Pos.CENTER);
 		refresh.setPrefHeight(40);
-		refresh.setStyle(
-				"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		refresh.setStyle(Constante.style16);
 
 		final Region spacer14 = new Region();
 		spacer14.setMaxWidth(20);
 		HBox.setHgrow(spacer14, Priority.ALWAYS);
 
 		HBox hb1 = new HBox();
-		ObservableList<javafx.scene.Node> lhb1 = hb1.getChildren();
+		final ObservableList<javafx.scene.Node> lhb1 = hb1.getChildren();
 		lhb1.add(labelCount);
 		hb1.setAlignment(Pos.CENTER_LEFT);
 
 		HBox hb2 = new HBox();
-		ObservableList<javafx.scene.Node> lhb2 = hb2.getChildren();
+		final ObservableList<javafx.scene.Node> lhb2 = hb2.getChildren();
 
 		listString = new TreeSet<String>();
 		listValue = new TreeSet<Integer>();
@@ -286,13 +283,15 @@ public class XMLView extends Application {
 		HBox.setHgrow(spacer13, Priority.ALWAYS);
 
 		newLabel.setPadding(new Insets(10, 0, 0, 0));
-		Label lbl = new Label(Constante.filtre);
+		
+		final Label lbl = new Label(Constante.filtre);
 		lbl.setPadding(new Insets(10, 0, 0, 0));
 		SuggestionProvider<String> provider = SuggestionProvider.create(listString);
+		
 		new AutoCompletionTextFieldBinding<>(autoComplete, provider);
 		autoComplete.setPrefWidth(250);
 		autoComplete.setPrefHeight(40);
-		autoComplete.setStyle("-fx-font-size: 12; -fx-font-family: Verdana, Tahoma, sans-serif;-fx-border-color: #98bb68; -fx-border-radius: 5;");
+		autoComplete.setStyle(Constante.style8);
 		autoComplete.textProperty().addListener((observable, oldValue, newValue) -> {
 			total = 0;
 			textArea.setScrollTop(0);
@@ -327,7 +326,7 @@ public class XMLView extends Application {
 					count = 0;
 					map = new HashMap<Integer, String>();
 					treeTableView = createTreeTableView(file);
-					treeTableView.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					treeTableView.setStyle(Constante.style11);
 					treeTableView.setPrefWidth(755);
 					layout.setLeft(treeTableView);
 					listString = new TreeSet<String>();
@@ -353,62 +352,56 @@ public class XMLView extends Application {
 		listHint.addAll(hb, spacer12, hb2, spacer13, newLabel, spacer14, refresh, spacer1, hb1);
 
 		VBox box = new VBox();
-		ObservableList<javafx.scene.Node> listVint = box.getChildren();
+		
+		final ObservableList<javafx.scene.Node> listVint = box.getChildren();
 		HBox hbox2 = new HBox();
-		ObservableList<javafx.scene.Node> listHint2 = hbox2.getChildren();
+		
+		final ObservableList<javafx.scene.Node> listHint2 = hbox2.getChildren();
 		listHint2.add(spacer2);
 		HBox hbox3 = new HBox();
-		ObservableList<javafx.scene.Node> listHint3 = hbox3.getChildren();
+		
+		final ObservableList<javafx.scene.Node> listHint3 = hbox3.getChildren();
 		listHint3.add(spacer3);
 		listVint.addAll(hbox3, hbox, hbox2);
 		layout.setTop(box);
+		
 		final Scene scene = new Scene(layout);
-		scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+		scene.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
 		stage.setScene(scene);
 		stage.setTitle(Constante.button4);
 		stage.setMaximized(true);
-
 		scene.widthProperty().addListener(new ChangeListener<Number>() {
 			@Override
 			public void changed(ObservableValue<? extends Number> observableValue, Number oldSceneWidth,
 					Number newSceneWidth) {
 				if (newSceneWidth.doubleValue() >= 1509 && newSceneWidth.doubleValue() < 1632) { // ecran 16 pouces
-					treeTableView.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-
-					collapseAll.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					refresh.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da;-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelCount.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					treeTableView.setStyle(Constante.style11);
+					collapseAll.setStyle(Constante.style16);
+					refresh.setStyle(Constante.style16);
+					labelCount.setStyle(Constante.style11);
 					textArea.setPrefWidth(755);
 					spacer1.setMaxWidth(700);
-					newLabel.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					lbl.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					newLabel.setStyle(Constante.style11);
+					lbl.setStyle(Constante.style11);
 				}
-				if (newSceneWidth.doubleValue() >= 1632 && newSceneWidth.doubleValue() >= 1728) { // ecran 17 pouces
-					treeTableView.setStyle("-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
-
-					collapseAll.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da;-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelCount.setStyle("-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					refresh.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da;-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
+				if (newSceneWidth.doubleValue() >= 1632 && newSceneWidth.doubleValue() <= 1728) { // ecran 17 pouces
+					treeTableView.setStyle(Constante.style17);
+					collapseAll.setStyle(Constante.style18);
+					labelCount.setStyle(Constante.style17);
+					refresh.setStyle(Constante.style18);
 					textArea.setPrefWidth(855);
 					spacer1.setMaxWidth(800);
-					newLabel.setStyle("-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					lbl.setStyle("-fx-font-size: 16; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					newLabel.setStyle(Constante.style17);
+					lbl.setStyle(Constante.style17);
 				} else if (newSceneWidth.doubleValue() < 1509) {
-					treeTableView.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-
-					collapseAll.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da;-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					refresh.setStyle(
-							"-fx-border-color: #98bb68; -fx-border-radius: 5;-fx-background-color: #eee9da;-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					labelCount.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					treeTableView.setStyle(Constante.style14);
+					collapseAll.setStyle(Constante.style19);
+					refresh.setStyle(Constante.style19);
+					labelCount.setStyle(Constante.style14);
 					textArea.setPrefWidth(555);
 					spacer1.setMaxWidth(400);
-					newLabel.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
-					lbl.setStyle("-fx-font-size: 10; -fx-font-family: Verdana, Tahoma, sans-serif;");
+					newLabel.setStyle(Constante.style14);
+					lbl.setStyle(Constante.style14);
 				}
 			}
 		});
@@ -422,7 +415,7 @@ public class XMLView extends Application {
 	 * @param file
 	 * @return
 	 */
-	public TreeTableView<Node> createTreeTableView(File file) {
+	public TreeTableView<Node> createTreeTableView(final File file) {
 		final TreeTableView<Node> treeTableView = new TreeTableView<>(createTreeItems(file));
 		treeTableView.setShowRoot(true);
 		final TreeTableColumn<Node, TreeItem<Node>> nameColumn = new TreeTableColumn<>("Nœud");
@@ -454,7 +447,7 @@ public class XMLView extends Application {
 					super.updateItem(item, empty);
 					if (item != null && !empty) {
 						final Node node = item.getValue();
-						Object obj = node.getUserData("lineNumber");
+						final Object obj = node.getUserData("lineNumber");
 						if (item.getValue() != null) {
 							final String s = node.getNodeName();
 							if (s.equals("valueSet")) {
@@ -472,18 +465,19 @@ public class XMLView extends Application {
 			};
 			return cell;
 		});
-		labelCount.setText(Integer.valueOf(count).toString() + " Fichier(s) de JDV   ");
-		labelCount.setStyle("-fx-font-size: 14; -fx-font-family: Verdana, Tahoma, sans-serif;");
+		
+		labelCount.setText(Integer.valueOf(count).toString() + Constante.numberFile);
+		labelCount.setStyle(Constante.style11);
 		nameColumn.setPrefWidth(300);
 		nameColumn.setSortable(false);
 		treeTableView.getColumns().add(nameColumn);
 
-		TreeTableColumn<Node, String> valueColumn = new TreeTableColumn<>("Valeur");
+		final TreeTableColumn<Node, String> valueColumn = new TreeTableColumn<>("Valeur");
 		valueColumn.setCellValueFactory(cellData -> {
 			final TreeItem<Node> item = cellData.getValue();
 			final Node childNode = item.getValue();
 			if (childNode != null) {
-				String s = childNode.getNodeType() == Node.DOCUMENT_TYPE_NODE
+				final String s = childNode.getNodeType() == Node.DOCUMENT_TYPE_NODE
 						? ((DocumentType) childNode).getInternalSubset()
 						: childNode.getNodeValue();
 				if (s != null) {
@@ -516,7 +510,7 @@ public class XMLView extends Application {
 	 */
 	public TreeItem<Node> createTreeItems(final File file) {
 		try {
-			InputStream targetStream = new FileInputStream(file);
+			final InputStream targetStream = new FileInputStream(file);
 			PositionalXMLReader positionalXMLReader = new PositionalXMLReader();
 			final Document doc = positionalXMLReader.readXML(targetStream);
 			doc.getDocumentElement().normalize();
@@ -534,7 +528,7 @@ public class XMLView extends Application {
 	 * 
 	 * @param root
 	 */
-	public void addChildrenItem(TreeItem<Node> root) {
+	public void addChildrenItem(final TreeItem<Node> root) {
 		final Node node = root.getValue();
 		if (node.hasAttributes()) {
 			final NamedNodeMap attrs = node.getAttributes();
@@ -543,7 +537,7 @@ public class XMLView extends Application {
 			}
 		}
 		final NodeList list = node.getChildNodes();
-		Object obj = node.getUserData("lineNumber");
+		final Object obj = node.getUserData("lineNumber");
 		if (node.getNodeName().equals("valueSet")) {
 			if (node.hasAttributes()) {
 				final NamedNodeMap attrs = node.getAttributes();
@@ -575,7 +569,7 @@ public class XMLView extends Application {
 	 * @param t
 	 * @return
 	 */
-	public int typeIndex(int t) {
+	public int typeIndex(final int t) {
 		switch (t) {
 		case Node.ELEMENT_NODE:
 			return 1;
@@ -605,7 +599,7 @@ public class XMLView extends Application {
 	private void collapseTreeView(final TreeItem<?> item) {
 		if (item != null && !item.isLeaf()) {
 			item.setExpanded(false);
-			for (TreeItem<?> child : item.getChildren()) {
+			for (final TreeItem<?> child : item.getChildren()) {
 				collapseTreeView(child);
 			}
 		}
@@ -650,7 +644,7 @@ public class XMLView extends Application {
 	}
 
 	/**
-	 * loading in api
+	 * load task api
 	 */
 	public void runTask(final Stage taskUpdateStage, final ProgressIndicator progress) {
 		Task<Void> longTask = new Task<Void>() {
