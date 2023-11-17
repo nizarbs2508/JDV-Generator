@@ -4,15 +4,15 @@ Le générateur de JDV de l'ANS permet :
 
 - de générer les fichiers de JDV « .xml » à partir du fichier « ANS\_Contenu\_JDV\_vx.x de travail.xslx » en cliquant sur le bouton «Macro JDV ».
 - de générer les fichiers de JDV « .xml » à partir des fichiers NOS en cliquant sur le bouton « Télécharger les JDV du NOS » puis en cliquant sur «Macro JDV ».
-- de générer le fichier « JDV\_Generes.xml » à partir des fichiers de JDV générer précédemment en cliquant sur le bouton « Macro JDV AD ».
 - De trier le fichier « JDV\_Generes.xml » et de l’afficher sous forme d’arborescence en cliquant sur le bouton « Arborescence Fichier AD généré ».
 - D’ouvrir le fichier « JDV\_Generes.xml » avec l’éditeur approprié en cliquant sur le bouton « Ouvrir le fichier AD généré ».
 - Initialiser la liste des fichiers  avec le bouton « Réinitialiser ».
-- La mise à jour des terminologies suite au téléchargement des fichiers « .rdf » du site « <https://smt.esante.gouv.fr/catalogue-des-terminologies/> » .
+- La mise à jour des terminologies suite au téléchargement des fichiers « .rdf » du site « <https://smt.esante.gouv.fr/catalogue-des-terminologies/> » . le téléchargement se fait via un token et une url définit dans le fichier rdf.properties inclus dans le jar (Convertisseur-JDV.jar).
 - Valider les fichiers JDV à travers le menu « Valider Fichiers JDV ».
+
 # Utilisation du générateur JDV de l'ANS
 
-Pour ouvrir le générateur CDA, il suffit de double cliquer sur **JDV\_Converter.jar**.
+Pour ouvrir le générateur CDA, il suffit de double cliquer sur **Convertisseur-JDV.jar**.
 
 Vous devez :
 
@@ -32,6 +32,7 @@ Vous devez :
 - URL des fichiers NOS pour télécharger les fichiers de JDV NOS.
 
 # Prérequis
+
 **Java doit être installé sur votre poste utilisateur.**
 
 **testContenuCDA doit être installé sur votre poste utilisateur pour avoir accès au dossier de JDV.**
@@ -45,3 +46,6 @@ Pour cela, installez une nouvelle version de Java en cliquant sur le lien : <ht
 Après l’installation de Java, ouvrez l’invite de commande (CMD) et tapez "java -version" pour vous assurer que la nouvelle version de Java est installée.
 
 Vous pouvez alors relancer le générateur de JDV.
+
+
+**Pour ajouter des nouveau terminologies RDF dans le fichier « rdf.properties » il faut faire un clic droit sur Convertisseur-JDV.jar et cliquer sur ouvrir l’archive via 7-zip par exemple. Chercher le fichier rdf.properties, l’ouvrir, inclure la nouvelle terminologie (ou modifier l’url en cas de changement d’accès à la SMT) et enregistrer le fichier dans le jar.**
