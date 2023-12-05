@@ -95,8 +95,9 @@ public class XMLView extends Application {
 	/**
 	 * tagNames
 	 */
-	private final String tagNames[] = { "Not considered", "Element", "Attribute", "Text", "CDATA section",
-			"Processing Instruction", "Comment", "Document", "Document Type" };
+	private final String tagNames[] = { Constante.notConsidered, Constante.element, Constante.attribute3,
+			Constante.text, Constante.cdataSection, Constante.processingInstruction, Constante.comment,
+			Constante.document, Constante.documentType };
 	/**
 	 * map jdv by line
 	 */
@@ -134,7 +135,7 @@ public class XMLView extends Application {
 	 */
 	public Stage start(final String file) {
 		fileG = file;
-		Stage stage = new Stage();
+		final Stage stage = new Stage();
 		start(stage);
 		return stage;
 	}
@@ -151,7 +152,6 @@ public class XMLView extends Application {
 		try {
 			br = new BufferedReader(new FileReader(file));
 			final StringBuilder sb = new StringBuilder();
-
 			String line = br.readLine();
 			while (line != null) {
 				sb.append(countLine++);
@@ -163,7 +163,6 @@ public class XMLView extends Application {
 		} catch (final IOException exp) {
 			exp.getStackTrace();
 		}
-
 		finally {
 			try {
 				br.close();
@@ -181,7 +180,7 @@ public class XMLView extends Application {
 	 * @param file
 	 */
 	@Override
-	public void start(Stage stage) {
+	public void start(final Stage stage) {
 		final TextField autoComplete = new TextField();
 		// Start ProgressBar creation
 		final double wndwWidth = 150.0d;
@@ -222,14 +221,12 @@ public class XMLView extends Application {
 		textArea.setPrefWidth(755);
 		layout.setRight(textArea);
 		HBox hbox = new HBox();
-		
 		final Image img = new Image(Constante.image15);
 		final ImageView view = new ImageView(img);
 		view.setPreserveRatio(true);
 		ObservableList<javafx.scene.Node> listHint = hbox.getChildren();
 		collapseAll.setGraphic(view);
 		collapseAll.setStyle(Constante.style16);
-
 		collapseAll.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
@@ -246,7 +243,7 @@ public class XMLView extends Application {
 			}
 		});
 
-		HBox hb = new HBox();
+		final HBox hb = new HBox();
 		final ObservableList<javafx.scene.Node> lhb = hb.getChildren();
 		lhb.add(collapseAll);
 		hb.setAlignment(Pos.CENTER_RIGHT);
@@ -258,36 +255,28 @@ public class XMLView extends Application {
 		refresh.setAlignment(Pos.CENTER);
 		refresh.setPrefHeight(40);
 		refresh.setStyle(Constante.style16);
-
 		final Region spacer14 = new Region();
 		spacer14.setMaxWidth(20);
 		HBox.setHgrow(spacer14, Priority.ALWAYS);
-
-		HBox hb1 = new HBox();
+		final HBox hb1 = new HBox();
 		final ObservableList<javafx.scene.Node> lhb1 = hb1.getChildren();
 		lhb1.add(labelCount);
 		hb1.setAlignment(Pos.CENTER_LEFT);
-
-		HBox hb2 = new HBox();
+		final HBox hb2 = new HBox();
 		final ObservableList<javafx.scene.Node> lhb2 = hb2.getChildren();
-
 		listString = new TreeSet<String>();
 		listValue = new TreeSet<Integer>();
 		for (Map.Entry<Integer, String> m : map.entrySet()) {
 			listString.add((String) m.getValue());
 			listValue.add((Integer) m.getKey());
 		}
-
 		final Region spacer13 = new Region();
 		spacer13.setMaxWidth(10);
 		HBox.setHgrow(spacer13, Priority.ALWAYS);
-
 		newLabel.setPadding(new Insets(10, 0, 0, 0));
-		
 		final Label lbl = new Label(Constante.filtre);
 		lbl.setPadding(new Insets(10, 0, 0, 0));
-		SuggestionProvider<String> provider = SuggestionProvider.create(listString);
-		
+		final SuggestionProvider<String> provider = SuggestionProvider.create(listString);
 		new AutoCompletionTextFieldBinding<>(autoComplete, provider);
 		autoComplete.setPrefWidth(250);
 		autoComplete.setPrefHeight(40);
@@ -303,7 +292,6 @@ public class XMLView extends Application {
 						final int numChars = lines[i].length();
 						total += numChars;
 					}
-
 					final Rectangle2D lineBounds = ((TextAreaSkin) textArea.getSkin()).getCharacterBounds(total);
 					textArea.setScrollTop(lineBounds.getMinY());
 				}
@@ -344,27 +332,20 @@ public class XMLView extends Application {
 		final Region spacer1 = new Region();
 		spacer1.setMaxWidth(800);
 		HBox.setHgrow(spacer1, Priority.ALWAYS);
-
 		final Region spacer12 = new Region();
 		spacer12.setMaxWidth(50);
 		HBox.setHgrow(spacer12, Priority.ALWAYS);
-
 		listHint.addAll(hb, spacer12, hb2, spacer13, newLabel, spacer14, refresh, spacer1, hb1);
-
-		VBox box = new VBox();
-		
+		final VBox box = new VBox();
 		final ObservableList<javafx.scene.Node> listVint = box.getChildren();
-		HBox hbox2 = new HBox();
-		
+		final HBox hbox2 = new HBox();
 		final ObservableList<javafx.scene.Node> listHint2 = hbox2.getChildren();
 		listHint2.add(spacer2);
-		HBox hbox3 = new HBox();
-		
+		final HBox hbox3 = new HBox();
 		final ObservableList<javafx.scene.Node> listHint3 = hbox3.getChildren();
 		listHint3.add(spacer3);
 		listVint.addAll(hbox3, hbox, hbox2);
 		layout.setTop(box);
-		
 		final Scene scene = new Scene(layout);
 		scene.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
 		stage.setScene(scene);
@@ -405,7 +386,6 @@ public class XMLView extends Application {
 				}
 			}
 		});
-
 		stage.show();
 	}
 
@@ -418,22 +398,19 @@ public class XMLView extends Application {
 	public TreeTableView<Node> createTreeTableView(final File file) {
 		final TreeTableView<Node> treeTableView = new TreeTableView<>(createTreeItems(file));
 		treeTableView.setShowRoot(true);
-		final TreeTableColumn<Node, TreeItem<Node>> nameColumn = new TreeTableColumn<>("Nœud");
-
+		final TreeTableColumn<Node, TreeItem<Node>> nameColumn = new TreeTableColumn<>(Constante.noeud);
 		nameColumn.setCellValueFactory((
 				TreeTableColumn.CellDataFeatures<Node, TreeItem<Node>> cellData) -> new ReadOnlyObjectWrapper<TreeItem<Node>>(
 						cellData.getValue()));
-
 		final Image[] images = new Image[tagNames.length];
 		try {
-			final Image image = new Image(getClass().getResourceAsStream("/image.png"));
+			final Image image = new Image(getClass().getResourceAsStream(Constante.imagePng));
 			for (int i = 0; i < images.length; i++) {
 				images[i] = new WritableImage(image.getPixelReader(), i * 16, 0, 16, 16);
 			}
 		} catch (final Exception e) {
 			e.printStackTrace();
 		}
-
 		nameColumn.setCellFactory(column -> {
 			TreeTableCell<Node, TreeItem<Node>> cell = new TreeTableCell<Node, TreeItem<Node>>() {
 				final ImageView[] imageView = new ImageView[images.length];
@@ -441,16 +418,15 @@ public class XMLView extends Application {
 					for (int i = 0; i < imageView.length; i++)
 						imageView[i] = new ImageView(images[i]);
 				}
-
 				@Override
-				protected void updateItem(TreeItem<Node> item, boolean empty) {
+				protected void updateItem(final TreeItem<Node> item, boolean empty) {
 					super.updateItem(item, empty);
 					if (item != null && !empty) {
 						final Node node = item.getValue();
-						final Object obj = node.getUserData("lineNumber");
+						final Object obj = node.getUserData(Constante.lineNumber);
 						if (item.getValue() != null) {
 							final String s = node.getNodeName();
-							if (s.equals("valueSet")) {
+							if (s.equals(Constante.valueSet2)) {
 								setText(s == null ? "" : s.trim() + "  [" + obj + "]");
 							} else {
 								setText(s == null ? "" : s.trim());
@@ -465,14 +441,14 @@ public class XMLView extends Application {
 			};
 			return cell;
 		});
-		
+
 		labelCount.setText(Integer.valueOf(count).toString() + Constante.numberFile);
 		labelCount.setStyle(Constante.style11);
 		nameColumn.setPrefWidth(300);
 		nameColumn.setSortable(false);
 		treeTableView.getColumns().add(nameColumn);
 
-		final TreeTableColumn<Node, String> valueColumn = new TreeTableColumn<>("Valeur");
+		final TreeTableColumn<Node, String> valueColumn = new TreeTableColumn<>(Constante.valeur);
 		valueColumn.setCellValueFactory(cellData -> {
 			final TreeItem<Node> item = cellData.getValue();
 			final Node childNode = item.getValue();
@@ -511,7 +487,7 @@ public class XMLView extends Application {
 	public TreeItem<Node> createTreeItems(final File file) {
 		try {
 			final InputStream targetStream = new FileInputStream(file);
-			PositionalXMLReader positionalXMLReader = new PositionalXMLReader();
+			final PositionalXMLReader positionalXMLReader = new PositionalXMLReader();
 			final Document doc = positionalXMLReader.readXML(targetStream);
 			doc.getDocumentElement().normalize();
 			root = new TreeItem<>(doc);
@@ -537,12 +513,12 @@ public class XMLView extends Application {
 			}
 		}
 		final NodeList list = node.getChildNodes();
-		final Object obj = node.getUserData("lineNumber");
-		if (node.getNodeName().equals("valueSet")) {
+		final Object obj = node.getUserData(Constante.lineNumber);
+		if (node.getNodeName().equals(Constante.valueSet2)) {
 			if (node.hasAttributes()) {
 				final NamedNodeMap attrs = node.getAttributes();
 				for (int i = 0; i < attrs.getLength(); i++) {
-					if (attrs.item(i).getNodeName().equals("displayName")) {
+					if (attrs.item(i).getNodeName().equals(Constante.displayName)) {
 						map.put((Integer) obj, attrs.item(i).getTextContent());
 					}
 				}
@@ -556,7 +532,7 @@ public class XMLView extends Application {
 				treeItem.setExpanded(true);
 				root.getChildren().add(treeItem);
 				addChildrenItem(treeItem);
-				if (childNode.getNodeName().equals("valueSet")) {
+				if (childNode.getNodeName().equals(Constante.valueSet2)) {
 					count++;
 				}
 			}

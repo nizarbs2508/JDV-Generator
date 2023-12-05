@@ -78,7 +78,7 @@ public class DateTimePicker extends DatePicker {
 		return dateTimeValue.get();
 	}
 
-	public void setDateTimeValue(LocalDateTime dateTimeValue) {
+	public void setDateTimeValue(final LocalDateTime dateTimeValue) {
 		if (dateTimeValue.isAfter(LocalDateTime.of(1971, 6, 30, 12, 00)))
 			this.dateTimeValue.set(dateTimeValue);
 		else
@@ -97,18 +97,18 @@ public class DateTimePicker extends DatePicker {
 		return format;
 	}
 
-	public void setFormat(String format) {
+	public void setFormat(final String format) {
 		this.format.set(format);
 	}
 
 	class InternalConverter extends StringConverter<LocalDate> {
-		public String toString(LocalDate object) {
+		public String toString(final LocalDate object) {
 
 			LocalDateTime value = getDateTimeValue();
 			return (value != null) ? value.format(formatter) : "";
 		}
 
-		public LocalDate fromString(String value) {
+		public LocalDate fromString(final String value) {
 			if (value == null || value.isEmpty()) {
 				dateTimeValue.set(null);
 				return null;

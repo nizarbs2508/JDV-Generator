@@ -19,6 +19,10 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
@@ -28,7 +32,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,6 +42,9 @@ import java.util.zip.ZipInputStream;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
@@ -51,11 +57,14 @@ import javax.xml.transform.stream.StreamSource;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.controlsfx.control.CheckListView;
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
 
 import com.spire.xls.CellRange;
 import com.spire.xls.Workbook;
@@ -175,6 +184,10 @@ public class AddXmlNode extends Application {
 	 */
 	public static List<File> listF = new ArrayList<File>();
 	/**
+	 * list file local
+	 */
+	public static List<File> listFR = new ArrayList<File>();
+	/**
 	 * size
 	 */
 	public static Dimension size = Toolkit.getDefaultToolkit().getScreenSize();
@@ -206,6 +219,22 @@ public class AddXmlNode extends Application {
 	 * fileContent
 	 */
 	public String fileContent = null;
+	/**
+	 * mapSnomed
+	 */
+	public Map<String, String> mapSnomed = new HashMap<String, String>();
+	/**
+	 * count
+	 */
+	public int count;
+	/**
+	 * passed
+	 */
+	public boolean passed;
+	/**
+	 * selectedList
+	 */
+	public List<String> selectedList = new ArrayList<String>();
 
 	/**
 	 * load task api
@@ -303,19 +332,20 @@ public class AddXmlNode extends Application {
 		final SeparatorMenuItem sep = new SeparatorMenuItem();
 		// Adding separator objects to menu
 		file.getItems().add(2, sep);
-
 		final Menu apropos = new Menu(Constante.apropos);
 		apropos.setStyle(Constante.style2);
 		final MenuItem item2 = new MenuItem(Constante.lisezmoi, imgRead);
 		item2.setStyle(Constante.style2);
 		apropos.getItems().addAll(item2);
-
 		// Creating a File chooser
 		final FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle(Constante.chooseFile);
-		fileChooser.getExtensionFilters().addAll(new ExtensionFilter("ALL Files", "*.xml*", "*.xlsx*", "*.xlsm*"));
+		fileChooser.getExtensionFilters()
+				.addAll(new ExtensionFilter(Constante.allFile, Constante.allXml, Constante.allXlsx, Constante.allxlsm));
 		files = new ArrayList<File>();
 		filesB = new ArrayList<File>();
+		listF = new ArrayList<File>();
+		listFR = new ArrayList<File>();
 		list.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
 		listB.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
 		final Label labelEmpty = new Label(Constante.empty1);
@@ -407,11 +437,10 @@ public class AddXmlNode extends Application {
 							fileMalFormed.add(file.get(i));
 						}
 					}
-
 					if (fileMalFormed.size() > 0) {
 						String name = "";
 						for (int i = 0; i < fileMalFormed.size(); i++) {
-							name = name + '\n' + fileMalFormed.get(i).getName();
+							name = name + Constante.retourChariot + fileMalFormed.get(i).getName();
 						}
 						final Alert alert = new Alert(AlertType.ERROR);
 						final DialogPane dialogPane = alert.getDialogPane();
@@ -420,7 +449,7 @@ public class AddXmlNode extends Application {
 						dialogPane.setMinHeight(120 * fileMalFormed.size());
 						dialogPane.setMaxHeight(120 * fileMalFormed.size());
 						dialogPane.setPrefHeight(120 * fileMalFormed.size());
-						alert.setContentText(Constante.alert10 + '\n' + name);
+						alert.setContentText(Constante.alert10 + Constante.retourChariot + name);
 						alert.setHeaderText(null);
 						alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
 						alert.showAndWait();
@@ -446,7 +475,7 @@ public class AddXmlNode extends Application {
 			public void handle(ActionEvent event) {
 				Platform.runLater(() -> {
 					final ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-					final InputStream is = classloader.getResourceAsStream("lisezmoi.md");
+					final InputStream is = classloader.getResourceAsStream(Constante.lisezMoiFile);
 					final VBox root = new VBox();
 					root.setPadding(new Insets(10));
 					root.setSpacing(5);
@@ -471,6 +500,12 @@ public class AddXmlNode extends Application {
 				});
 			}
 		});
+
+		final Label lContent = new Label(Constante.jdvFile);
+		final TextField field = new TextField();
+
+		final Label lContentOther = new Label(Constante.rdfFile);
+		final TextField fieldOther = new TextField();
 
 		final ImageView imgViewA = new ImageView(Constante.image1);
 		imgViewA.setFitWidth(20);
@@ -703,6 +738,8 @@ public class AddXmlNode extends Application {
 		button2.setMaxHeight(30);
 		button2.setStyle(Constante.style1);
 
+		final TitledPane titledPane = new TitledPane();
+		final TitledPane titledPaneOther = new TitledPane();
 		button2.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(final ActionEvent event) {
@@ -724,6 +761,11 @@ public class AddXmlNode extends Application {
 			}
 		});
 
+		final Button chooseFile = new Button(Constante.chooseFile);
+		final Button chooseFileOther = new Button(Constante.chooseFile);
+		final TitledPane firstTitledPane = new TitledPane();
+		final Label labelContent = new Label(Constante.infoContent);
+
 		buttonTermino.setPrefWidth(230);
 		buttonTermino.setPrefHeight(30);
 		buttonTermino.setMinHeight(30);
@@ -733,7 +775,6 @@ public class AddXmlNode extends Application {
 			@Override
 			public void handle(final ActionEvent event) {
 				thirdStage = new Stage();
-
 				final VBox root = new VBox();
 				root.setPadding(new Insets(10));
 				root.setSpacing(5);
@@ -747,44 +788,124 @@ public class AddXmlNode extends Application {
 				textPwd.setPrefWidth(40);
 				textPwd.setPadding(new Insets(5, 5, 5, 5));
 				textPwd.setStyle(Constante.style8);
-
 				// create a tile pane
 				HBox rbox = new HBox();
 				final List<String> matchingKey = new ArrayList<>();
 				final Map<String, String> map = new HashMap<String, String>();
 				final Map<String, String> map1 = new HashMap<String, String>();
-				try (InputStream input = AddXmlNode.class.getClassLoader().getResourceAsStream("rdf.properties")) {
-
+				try (InputStream input = AddXmlNode.class.getClassLoader().getResourceAsStream(Constante.rdfFileName)) {
 					Properties prop = new Properties();
-
 					if (input == null) {
 						System.out.println("Sorry, unable to find rdf.properties");
-						return;
 					}
 					// load a properties file from class path, inside static method
 					prop.load(input);
 					// get the property value and print it out
-					Pattern patt = Pattern.compile("sample.*");
+					Pattern patt = Pattern.compile(Constante.samplePattern);
 					for (Entry<Object, Object> each : prop.entrySet()) {
 						final Matcher m = patt.matcher((String) each.getKey());
 						if (m.find()) {
-							String[] words = ((String) each.getKey()).split("sample.");
+							String[] words = ((String) each.getKey()).split(Constante.samplePattern2);
 							matchingKey.add(words[1]);
 							map.put(words[1], (String) each.getValue());
 						}
 					}
-					tokenurl = prop.getProperty("token.url").trim();
-					downloadurl = prop.getProperty("download.url").trim();
-					tokenopen = prop.getProperty("token.open").trim();
+					tokenurl = prop.getProperty(Constante.tokenUrl).trim();
+					downloadurl = prop.getProperty(Constante.downloadUrl).trim();
+					tokenopen = prop.getProperty(Constante.tokenOpen).trim();
 
 				} catch (final IOException ex) {
 					ex.printStackTrace();
 				}
+				titledPane.setText(Constante.taasip);
+				titledPane.setPadding(new Insets(5, 5, 5, 5));
+				titledPane.setStyle(Constante.style5);
 
-				List<String> selectedList = new ArrayList<String>();
+				titledPaneOther.setText(Constante.otherTermino);
+				titledPaneOther.setPadding(new Insets(5, 5, 5, 5));
+				titledPaneOther.setStyle(Constante.style5);
+
+				final VBox content = new VBox();
+				lContent.setPadding(new Insets(5, 5, 5, 5));
+				lContent.setStyle(Constante.style5);
+				lContentOther.setPadding(new Insets(5, 5, 5, 5));
+				lContentOther.setStyle(Constante.style5);
+
+				final HBox box = new HBox();
+				field.setPrefWidth(580);
+				field.setPrefHeight(30);
+				field.setMinHeight(30);
+				field.setMaxHeight(30);
+				field.setStyle(Constante.style5);
+				field.setDisable(true);
+
+				fieldOther.setPrefWidth(580);
+				fieldOther.setPrefHeight(30);
+				fieldOther.setMinHeight(30);
+				fieldOther.setMaxHeight(30);
+				fieldOther.setStyle(Constante.style5);
+				fieldOther.setDisable(true);
+
+				Accordion accordioneOther = new Accordion();
+				final FileChooser fileChooserOther = new FileChooser();
+				fileChooserOther.setTitle(Constante.chooseFile);
+				fileChooserOther.getExtensionFilters().addAll(new ExtensionFilter(Constante.allFile, Constante.allRdf));
+				chooseFileOther.setPrefWidth(150);
+				chooseFileOther.setPrefHeight(30);
+				chooseFileOther.setMinHeight(30);
+				chooseFileOther.setMaxHeight(30);
+				chooseFileOther.setStyle(Constante.style1);
+				chooseFileOther.setOnAction(new EventHandler<ActionEvent>() {
+					public void handle(ActionEvent event) {
+						// Opening a dialog box
+						final List<File> file = fileChooserOther.showOpenMultipleDialog(thirdStage);
+						if (file != null) {
+							fieldOther.setText(file.get(0).getAbsolutePath());
+							titledPaneOther.setExpanded(false);
+						}
+					}
+				});
+
+				Accordion accordione = new Accordion();
+				chooseFile.setPrefWidth(150);
+				chooseFile.setPrefHeight(30);
+				chooseFile.setMinHeight(30);
+				chooseFile.setMaxHeight(30);
+				chooseFile.setStyle(Constante.style1);
+				chooseFile.setOnAction(new EventHandler<ActionEvent>() {
+					public void handle(ActionEvent event) {
+						// Opening a dialog box
+						final List<File> file = fileChooser.showOpenMultipleDialog(thirdStage);
+						if (file != null) {
+							field.setText(file.get(0).getAbsolutePath());
+							titledPane.setExpanded(false);
+							accordione.setDisable(true);
+						}
+					}
+				});
+
+				final Region spacere = new Region();
+				spacere.setMaxWidth(10);
+				HBox.setHgrow(spacere, Priority.ALWAYS);
+
+				box.getChildren().addAll(chooseFile, spacere, field);
+
+				final FileChooser fileChooser = new FileChooser();
+				fileChooser.setTitle(Constante.chooseFile);
+				fileChooser.getExtensionFilters()
+						.addAll(new ExtensionFilter(Constante.allFile, Constante.allXlsx, Constante.allxlsm));
+
+				content.getChildren().addAll(lContent, box);
+
+				titledPane.setContent(content);
+
+				accordione.getPanes().addAll(titledPane);
+				accordione.setDisable(true);
+
+				accordioneOther.getPanes().addAll(titledPaneOther);
 
 				for (int i = 0; i < matchingKey.size(); i++) {
-					CheckBox c = new CheckBox(matchingKey.get(i));
+					final CheckBox c = new CheckBox(matchingKey.get(i));
 					c.setStyle(Constante.style20);
 					final String name = matchingKey.get(i);
 					final Region spacer = new Region();
@@ -796,9 +917,19 @@ public class AddXmlNode extends Application {
 						public void handle(ActionEvent e) {
 							if (c.isSelected()) {
 								selectedList.add(name);
+								if (name.contains(Constante.asip)) {
+									accordione.setDisable(false);
+									titledPane.setExpanded(true);
+								}
 							} else {
 								selectedList.remove(name);
+								if (name.contains(Constante.asip)) {
+									accordione.setDisable(true);
+									titledPane.setExpanded(false);
+									field.setText("");
+								}
 							}
+
 						}
 					});
 				}
@@ -817,18 +948,32 @@ public class AddXmlNode extends Application {
 				spacer4.setMaxHeight(10);
 				VBox.setVgrow(spacer4, Priority.ALWAYS);
 
-				final TitledPane firstTitledPane = new TitledPane();
 				firstTitledPane.setText(Constante.information);
 				firstTitledPane.setPadding(new Insets(5, 5, 5, 5));
 				firstTitledPane.setStyle(Constante.style5);
 
 				final VBox content1 = new VBox();
-				final Label labelContent = new Label(Constante.infoContent);
 				content1.getChildren().add(labelContent);
 				labelContent.setPadding(new Insets(5, 5, 5, 5));
 				labelContent.setStyle(Constante.style5);
 
 				firstTitledPane.setContent(content1);
+
+				final VBox contentOther = new VBox();
+				lContentOther.setPadding(new Insets(5, 5, 5, 5));
+				lContentOther.setStyle(Constante.style5);
+
+				final HBox boxOther = new HBox();
+
+				final Region spaceree = new Region();
+				spaceree.setMaxWidth(10);
+				HBox.setHgrow(spaceree, Priority.ALWAYS);
+
+				boxOther.getChildren().addAll(chooseFileOther, spaceree, fieldOther);
+
+				contentOther.getChildren().addAll(lContentOther, boxOther);
+
+				titledPaneOther.setContent(contentOther);
 
 				Accordion accordion = new Accordion();
 				accordion.getPanes().addAll(firstTitledPane);
@@ -837,9 +982,21 @@ public class AddXmlNode extends Application {
 				spacer5.setMaxHeight(20);
 				VBox.setVgrow(spacer5, Priority.ALWAYS);
 
+				final Region spacer6 = new Region();
+				spacer6.setMaxHeight(20);
+				VBox.setVgrow(spacer6, Priority.ALWAYS);
+
+				final Region spacer7 = new Region();
+				spacer7.setMaxHeight(20);
+				VBox.setVgrow(spacer7, Priority.ALWAYS);
+
+				final Region spacer8 = new Region();
+				spacer8.setMaxHeight(20);
+				VBox.setVgrow(spacer8, Priority.ALWAYS);
+
 				root.getChildren().addAll(labelLog, textLogin, labelPwd, textPwd, rbox, spacer4, resultButton, spacer5,
-						accordion);
-				Scene scene = new Scene(root, 650, 400);
+						accordione, spacer6, accordioneOther, spacer7, accordion);
+				Scene scene = new Scene(root, 800, 650);
 				thirdStage.setTitle(Constante.terminology);
 				thirdStage.setScene(scene);
 				thirdStage.setMaximized(false);
@@ -848,224 +1005,669 @@ public class AddXmlNode extends Application {
 				buttonTermino1.setOnAction(new EventHandler<ActionEvent>() {
 					@Override
 					public void handle(final ActionEvent event) {
-						if (!textLogin.getText().isEmpty() && !textPwd.getText().isEmpty() && !selectedList.isEmpty()) {
-							runTask(taskUpdateStage, progress);
-							Platform.runLater(() -> {
-								List<File> fileRdf = new ArrayList<File>();
+						runTask(taskUpdateStage, progress);
+						Platform.runLater(() -> {
+							List<String> listTermino = new ArrayList<String>();
+							String text = "";
+							if (!textLogin.getText().isEmpty() && !textPwd.getText().isEmpty()) {
 								TerminologyDownloader downloader = new TerminologyDownloader();
-								fileRdf = downloader.main(textLogin.getText(), textPwd.getText(), selectedList, map,
-										tokenurl, downloadurl, tokenopen);
-
-								try (InputStream input = AddXmlNode.class.getClassLoader()
-										.getResourceAsStream("rdf.properties")) {
-
-									Properties prop = new Properties();
-
-									if (input == null) {
-										System.out.println("Sorry, unable to find rdf.properties");
-										return;
-									}
-									// load a properties file from class path, inside static method
-									prop.load(input);
-									// get the property value and print it out
-									Pattern patt = Pattern.compile("name.*");
-									for (Entry<Object, Object> each : prop.entrySet()) {
-										final Matcher m = patt.matcher((String) each.getKey());
-										if (m.find()) {
-											String[] words = ((String) each.getKey()).split("name.");
-											matchingKey.add(words[1]);
-											map1.put(words[1], (String) each.getValue());
-										}
-									}
-								} catch (final IOException ex) {
-									ex.printStackTrace();
+								final String str = downloader.getFirstToken(tokenopen, textLogin.getText(),
+										textPwd.getText());
+								if (str == null) {
+									count = 0;
+								} else {
+									count = 1;
 								}
-
-								if (fileRdf != null) {
-									if (!fileRdf.isEmpty()) {
-										Document doc = null;
-										for (final File file : fileRdf) {
-											if (getExtension(file.getAbsolutePath()).equals(Constante.rdf)) {
-												List<String> listStr = new ArrayList<String>();
-												final String fileName = file.getName().trim();
-												String fileDestName = null;
-
-												for (Map.Entry<String, String> mapentry : map1.entrySet()) {
-													if (fileName.toUpperCase()
-															.contains((CharSequence) mapentry.getKey())) {
-														fileDestName = (String) mapentry.getValue();
-														break;
-													}
-												}
+							} else {
+								count = 1;
+							}
+							if (count == 1) {
+								// TA-ASIP
+								if (selectedList.size() == 1 && !field.getText().isEmpty()) {
+									passed = true;
+									final String ext = getExtension(field.getText());
+									if (!field.getText().isEmpty()
+											&& (ext.equals(Constante.xlsm) || ext.equals(Constante.xlsx))) {
+										// Create a Workbook instance
+										final Workbook workbookRdf = new Workbook();
+										// Load an Excel file
+										workbookRdf.loadFromFile(field.getText());
+										final Worksheet worksheet = workbookRdf.getWorksheets().get(2);
+										List<RetrieveValueSet> listR = new ArrayList<RetrieveValueSet>();
+										// Get the row count
+										final int maxRow = worksheet.getLastRow();
+										// Loop through the rows
+										for (int row = 2; row <= maxRow; row++) {
+											RetrieveValueSet response = new RetrieveValueSet();
+											// Loop through the columns
+											// Get the current cell
+											CellRange cell = worksheet.getCellRange(row, 1);
+											CellRange cell1 = worksheet.getCellRange(row, 10);
+											response.setValueSetOID(cell.getValue());
+											response.setObsolete(cell1.getValue());
+											if (response.getValueSetOID() != null
+													&& !response.getObsolete().equalsIgnoreCase(Constante.oui)) {
+												listR.add(response);
+											}
+										}
+										if (listR != null) {
+											if (!listR.isEmpty()) {
+												DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+												DocumentBuilder builder;
 												try {
-													doc = parseXML(file.getAbsolutePath());
-													if (doc != null) {
-														final NodeList nList = doc
-																.getElementsByTagName(Constante.notation);
-														for (int i = 0; i < nList.getLength(); i++) {
-															org.w3c.dom.Node nNode = (org.w3c.dom.Node) nList.item(i);
-															final Element eElement = (Element) nNode;
-															listStr.add(eElement.getFirstChild().getTextContent());
+													builder = dbf.newDocumentBuilder();
+													Document doc = builder.newDocument();
+													String fileDestName = null;
+													Element newNode = doc.createElement(Constante.rdf_RDF);
+													doc.appendChild(newNode);
+													newNode.setAttribute("xmlns:rdf",
+															"http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+													newNode.setAttribute("xmlns:schema", "https://schema.org/");
+													newNode.setAttribute("xmlns:voaf",
+															"http://purl.org/vocommons/voaf#");
+													newNode.setAttribute("xmlns:rdfs",
+															"http://www.w3.org/2000/01/rdf-schema#");
+													newNode.setAttribute("xmlns:metadata",
+															"http://topbraid.org/metadata#");
+													newNode.setAttribute("xmlns:icd", "http://id.who.int/icd/schema/");
+													newNode.setAttribute("xmlns:terms", "http://purl.org/dc/terms/");
+													newNode.setAttribute("xmlns:adms", "http://www.w3.org/ns/adms#");
+													newNode.setAttribute("xmlns:core",
+															"http://open-services.net/ns/core#");
+													newNode.setAttribute("xmlns:j.0", "http://topbraid.org/swa#");
+													newNode.setAttribute("xmlns:owl", "http://www.w3.org/2002/07/owl#");
+													newNode.setAttribute("xmlns:skos",
+															"http://www.w3.org/2004/02/skos/core#");
+													newNode.setAttribute("xmlns:teamwork",
+															"http://topbraid.org/teamwork#");
+													newNode.setAttribute("xmlns:j.1",
+															"http://teamwork.topbraidlive.org/ontologyprojects#");
+													newNode.setAttribute("xmlns:dcat", "http://www.w3.org/ns/dcat#");
+													newNode.setAttribute("xmlns:ns",
+															"https://data.esante.gouv.fr/profile/ns#");
+													newNode.setAttribute("xmlns:foaf", "http://xmlns.com/foaf/0.1/");
+													newNode.setAttribute("xmlns:xsd",
+															"http://www.w3.org/2001/XMLSchema#");
+
+													try (InputStream input = AddXmlNode.class.getClassLoader()
+															.getResourceAsStream(Constante.rdfFileName)) {
+
+														Properties prop = new Properties();
+
+														if (input == null) {
+															System.out.println("Sorry, unable to find rdf.properties");
+														}
+														// load a properties file from class path, inside static method
+														prop.load(input);
+														// get the property value and print it out
+														Pattern patt = Pattern.compile(Constante.namePattern);
+														for (Entry<Object, Object> each : prop.entrySet()) {
+															final Matcher m = patt.matcher((String) each.getKey());
+															if (m.find()) {
+																String[] words = ((String) each.getKey())
+																		.split(Constante.namePattern2);
+																matchingKey.add(words[1]);
+																map1.put(words[1], (String) each.getValue());
+															}
+														}
+													} catch (final IOException ex) {
+														ex.printStackTrace();
+													}
+
+													for (final RetrieveValueSet str : listR) {
+														Element thirdNode = null;
+														thirdNode = doc.createElement(Constante.description);
+														newNode.appendChild(thirdNode);
+														Element secondNode = null;
+														secondNode = doc.createElement(Constante.notation);
+														secondNode.setTextContent(str.getValueSetOID());
+														thirdNode.appendChild(secondNode);
+														doc.normalize();
+														for (Map.Entry<String, String> mapentry : map1.entrySet()) {
+															if (Constante.nameTaAsip
+																	.contains((CharSequence) mapentry.getKey())) {
+																fileDestName = (String) mapentry.getValue();
+																break;
+															}
 														}
 													}
-													final org.w3c.dom.Node node = removeAllChildren(
-															doc.getFirstChild());
-													for (final String str : listStr) {
-														org.w3c.dom.Node newNode = null;
-														newNode = doc.createElement(Constante.description);
-														node.appendChild(newNode);
-														org.w3c.dom.Node secondNode = null;
-														secondNode = doc.createElement(Constante.notation);
-														secondNode.setTextContent(str);
-														newNode.appendChild(secondNode);
-													}
-													doc.normalize();
-													prettyPrint(doc, new File(textFieldPS.getText()).getParent(),
+													File xml = prettyPrint(doc,
+															new File(textFieldPS.getText()).getParent(),
 															fileDestName.trim());
+													listTermino.add(xml.getAbsolutePath());
+													workbookRdf.dispose();
 
 												} catch (final ParserConfigurationException e) {
-													e.printStackTrace();
-												} catch (final SAXException e) {
-													e.printStackTrace();
-												} catch (final IOException e) {
+
 													e.printStackTrace();
 												} catch (final Exception e) {
+
 													e.printStackTrace();
+												}
+
+											}
+										}
+
+									}
+
+								} else if (!textLogin.getText().isEmpty() && !textPwd.getText().isEmpty()
+										&& !selectedList.isEmpty() && field.getText().isEmpty()) {
+									passed = true;
+									List<File> fileRdf = new ArrayList<File>();
+									TerminologyDownloader downloader = new TerminologyDownloader();
+									fileRdf = downloader.main(textLogin.getText(), textPwd.getText(), selectedList, map,
+											tokenurl, downloadurl, tokenopen);
+									try (InputStream input = AddXmlNode.class.getClassLoader()
+											.getResourceAsStream(Constante.rdfFileName)) {
+										Properties prop = new Properties();
+										if (input == null) {
+											System.out.println("Sorry, unable to find rdf.properties");
+										}
+										// load a properties file from class path, inside static method
+										prop.load(input);
+										// get the property value and print it out
+										Pattern patt = Pattern.compile(Constante.namePattern);
+										for (Entry<Object, Object> each : prop.entrySet()) {
+											final Matcher m = patt.matcher((String) each.getKey());
+											if (m.find()) {
+												String[] words = ((String) each.getKey()).split(Constante.namePattern2);
+												matchingKey.add(words[1]);
+												map1.put(words[1], (String) each.getValue());
+											}
+										}
+									} catch (final IOException ex) {
+
+										ex.printStackTrace();
+									}
+
+									if (fileRdf != null) {
+										if (!fileRdf.isEmpty()) {
+											for (final File file : fileRdf) {
+												if (getExtension(file.getAbsolutePath()).equals(Constante.rdf)) {
+													List<String> listStr = new ArrayList<String>();
+													final String fileName = file.getName().trim();
+													String fileDestName = null;
+													for (Map.Entry<String, String> mapentry : map1.entrySet()) {
+														if (fileName.toUpperCase()
+																.contains((CharSequence) mapentry.getKey())) {
+															fileDestName = (String) mapentry.getValue();
+															break;
+														}
+													}
+													try {
+														listStr = parse(file.getAbsolutePath());
+														DocumentBuilderFactory documentFactory = DocumentBuilderFactory
+																.newInstance();
+														DocumentBuilder documentBuilder = documentFactory
+																.newDocumentBuilder();
+														Document document = documentBuilder.newDocument();
+														// root element
+														Element root = document.createElement(Constante.rdf_RDF);
+														document.appendChild(root);
+														if (!mapSnomed.isEmpty()) {
+															for (Map.Entry<String, String> mapentry : mapSnomed
+																	.entrySet()) {
+																final String key = (String) mapentry.getKey();
+																final String value = (String) mapentry.getValue();
+																final Attr attr = document.createAttribute(key);
+																attr.setValue(value);
+																root.setAttributeNode(attr);
+															}
+														}
+														// notation element
+														if (listStr != null) {
+															if (!listStr.isEmpty()) {
+																for (String str : listStr) {
+																	// description element
+																	Element description = document
+																			.createElement(Constante.description);
+																	root.appendChild(description);
+																	Element notation = document
+																			.createElement(Constante.notation);
+																	notation.appendChild(document.createTextNode(str));
+																	description.appendChild(notation);
+																}
+																document.normalize();
+																File xml = prettyPrint(document,
+																		new File(textFieldPS.getText()).getParent(),
+																		fileDestName.trim());
+																listTermino.add(xml.getAbsolutePath());
+
+															}
+														}
+
+													} catch (final ParserConfigurationException e) {
+
+														e.printStackTrace();
+													} catch (final SAXException e) {
+
+														e.printStackTrace();
+													} catch (final IOException e) {
+
+														e.printStackTrace();
+													} catch (final Exception e) {
+
+														e.printStackTrace();
+													}
+												}
+											}
+										} else {
+											textLogin.setText("");
+											textPwd.setText("");
+
+										}
+									} else {
+										textLogin.setText("");
+										textPwd.setText("");
+									}
+
+								} else if (!textLogin.getText().isEmpty() && !textPwd.getText().isEmpty()
+										&& !selectedList.isEmpty() && !field.getText().isEmpty()) {
+									passed = true;
+									try (InputStream input = AddXmlNode.class.getClassLoader()
+											.getResourceAsStream(Constante.rdfFileName)) {
+
+										Properties prop = new Properties();
+
+										if (input == null) {
+											System.out.println("Sorry, unable to find rdf.properties");
+										}
+										// load a properties file from class path, inside static method
+										prop.load(input);
+										// get the property value and print it out
+										Pattern patt = Pattern.compile(Constante.namePattern);
+										for (Entry<Object, Object> each : prop.entrySet()) {
+											final Matcher m = patt.matcher((String) each.getKey());
+											if (m.find()) {
+												String[] words = ((String) each.getKey()).split(Constante.namePattern2);
+												matchingKey.add(words[1]);
+												map1.put(words[1], (String) each.getValue());
+											}
+										}
+									} catch (final IOException ex) {
+
+										ex.printStackTrace();
+									}
+									final String ext = getExtension(field.getText());
+									if (!field.getText().isEmpty()
+											&& (ext.equals(Constante.xlsm) || ext.equals(Constante.xlsx))) {
+										// Create a Workbook instance
+										final Workbook workbookRdf = new Workbook();
+										// Load an Excel file
+										workbookRdf.loadFromFile(field.getText());
+										final Worksheet worksheet = workbookRdf.getWorksheets().get(2);
+										List<RetrieveValueSet> listR = new ArrayList<RetrieveValueSet>();
+										// Get the row count
+										final int maxRow = worksheet.getLastRow();
+										// Loop through the rows
+										for (int row = 2; row <= maxRow; row++) {
+											RetrieveValueSet response = new RetrieveValueSet();
+											// Loop through the columns
+											// Get the current cell
+											CellRange cell = worksheet.getCellRange(row, 1);
+											CellRange cell1 = worksheet.getCellRange(row, 10);
+											response.setValueSetOID(cell.getValue());
+											response.setObsolete(cell1.getValue());
+											if (response.getValueSetOID() != null
+													&& !response.getObsolete().equalsIgnoreCase(Constante.oui)) {
+												listR.add(response);
+											}
+										}
+										if (listR != null) {
+											if (!listR.isEmpty()) {
+												DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+												DocumentBuilder builder;
+												try {
+													builder = dbf.newDocumentBuilder();
+													Document doc = builder.newDocument();
+													String fileDestName = null;
+													Element newNode = doc.createElement(Constante.rdf_RDF);
+													doc.appendChild(newNode);
+													newNode.setAttribute("xmlns:rdf",
+															"http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+													newNode.setAttribute("xmlns:schema", "https://schema.org/");
+													newNode.setAttribute("xmlns:voaf",
+															"http://purl.org/vocommons/voaf#");
+													newNode.setAttribute("xmlns:rdfs",
+															"http://www.w3.org/2000/01/rdf-schema#");
+													newNode.setAttribute("xmlns:metadata",
+															"http://topbraid.org/metadata#");
+													newNode.setAttribute("xmlns:icd", "http://id.who.int/icd/schema/");
+													newNode.setAttribute("xmlns:terms", "http://purl.org/dc/terms/");
+													newNode.setAttribute("xmlns:adms", "http://www.w3.org/ns/adms#");
+													newNode.setAttribute("xmlns:core",
+															"http://open-services.net/ns/core#");
+													newNode.setAttribute("xmlns:j.0", "http://topbraid.org/swa#");
+													newNode.setAttribute("xmlns:owl", "http://www.w3.org/2002/07/owl#");
+													newNode.setAttribute("xmlns:skos",
+															"http://www.w3.org/2004/02/skos/core#");
+													newNode.setAttribute("xmlns:teamwork",
+															"http://topbraid.org/teamwork#");
+													newNode.setAttribute("xmlns:j.1",
+															"http://teamwork.topbraidlive.org/ontologyprojects#");
+													newNode.setAttribute("xmlns:dcat", "http://www.w3.org/ns/dcat#");
+													newNode.setAttribute("xmlns:ns",
+															"https://data.esante.gouv.fr/profile/ns#");
+													newNode.setAttribute("xmlns:foaf", "http://xmlns.com/foaf/0.1/");
+													newNode.setAttribute("xmlns:xsd",
+															"http://www.w3.org/2001/XMLSchema#");
+													for (final RetrieveValueSet str : listR) {
+														Element thirdNode = null;
+														thirdNode = doc.createElement(Constante.description);
+														newNode.appendChild(thirdNode);
+														Element secondNode = null;
+														secondNode = doc.createElement(Constante.notation);
+														secondNode.setTextContent(str.getValueSetOID());
+														thirdNode.appendChild(secondNode);
+														doc.normalize();
+														for (Map.Entry<String, String> mapentry : map1.entrySet()) {
+															if (Constante.nameTaAsip
+																	.contains((CharSequence) mapentry.getKey())) {
+																fileDestName = (String) mapentry.getValue();
+																break;
+															}
+														}
+													}
+													File xml = prettyPrint(doc,
+															new File(textFieldPS.getText()).getParent(),
+															fileDestName.trim());
+													listTermino.add(xml.getAbsolutePath());
+
+												} catch (final ParserConfigurationException e) {
+
+													e.printStackTrace();
+												} catch (final Exception e) {
+
+													e.printStackTrace();
+												}
+
+											}
+										}
+
+										workbookRdf.dispose();
+									}
+
+									List<File> fileRdf = new ArrayList<File>();
+									TerminologyDownloader downloader = new TerminologyDownloader();
+									fileRdf = downloader.main(textLogin.getText(), textPwd.getText(), selectedList, map,
+											tokenurl, downloadurl, tokenopen);
+
+									try (InputStream input = AddXmlNode.class.getClassLoader()
+											.getResourceAsStream(Constante.rdfFileName)) {
+
+										Properties prop = new Properties();
+
+										if (input == null) {
+											System.out.println("Sorry, unable to find rdf.properties");
+										}
+										// load a properties file from class path, inside static method
+										prop.load(input);
+										// get the property value and print it out
+										Pattern patt = Pattern.compile(Constante.namePattern);
+										for (Entry<Object, Object> each : prop.entrySet()) {
+											final Matcher m = patt.matcher((String) each.getKey());
+											if (m.find()) {
+												String[] words = ((String) each.getKey()).split(Constante.namePattern2);
+												matchingKey.add(words[1]);
+												map1.put(words[1], (String) each.getValue());
+											}
+										}
+									} catch (final IOException ex) {
+
+										ex.printStackTrace();
+									}
+									if (fileRdf != null) {
+										if (!fileRdf.isEmpty()) {
+											for (final File file : fileRdf) {
+												if (getExtension(file.getAbsolutePath()).equals(Constante.rdf)) {
+													List<String> listStr = new ArrayList<String>();
+													final String fileName = file.getName().trim();
+													String fileDestName = null;
+
+													for (Map.Entry<String, String> mapentry : map1.entrySet()) {
+														if (fileName.toUpperCase()
+																.contains((CharSequence) mapentry.getKey())) {
+															fileDestName = (String) mapentry.getValue();
+															break;
+														}
+													}
+													try {
+														listStr = parse(file.getAbsolutePath());
+														DocumentBuilderFactory documentFactory = DocumentBuilderFactory
+																.newInstance();
+														DocumentBuilder documentBuilder = documentFactory
+																.newDocumentBuilder();
+														Document document = documentBuilder.newDocument();
+														// root element
+														Element root = document.createElement(Constante.rdf_RDF);
+														document.appendChild(root);
+														if (!mapSnomed.isEmpty()) {
+															for (Map.Entry<String, String> mapentry : mapSnomed
+																	.entrySet()) {
+																final String key = (String) mapentry.getKey();
+																final String value = (String) mapentry.getValue();
+																final Attr attr = document.createAttribute(key);
+																attr.setValue(value);
+																root.setAttributeNode(attr);
+															}
+														}
+														// notation element
+														if (listStr != null) {
+															if (!listStr.isEmpty()) {
+																for (String str : listStr) {
+																	// description element
+																	Element description = document
+																			.createElement(Constante.description);
+																	root.appendChild(description);
+																	Element notation = document
+																			.createElement(Constante.notation);
+																	notation.appendChild(document.createTextNode(str));
+																	description.appendChild(notation);
+																}
+																document.normalize();
+																File xml = prettyPrint(document,
+																		new File(textFieldPS.getText()).getParent(),
+																		fileDestName.trim());
+																listTermino.add(xml.getAbsolutePath());
+															}
+														}
+
+													} catch (final ParserConfigurationException e) {
+
+														e.printStackTrace();
+													} catch (final SAXException e) {
+
+														e.printStackTrace();
+													} catch (final IOException e) {
+
+														e.printStackTrace();
+													} catch (final Exception e) {
+
+														e.printStackTrace();
+													}
+												}
+											}
+										} else {
+											textLogin.setText("");
+											textPwd.setText("");
+										}
+									} else {
+										textLogin.setText("");
+										textPwd.setText("");
+
+									}
+								}
+								// Importer terminologie
+								if (!fieldOther.getText().isEmpty()) {
+									passed = true;
+									List<File> fileRdf = new ArrayList<File>();
+									final File rdfFile = new File(fieldOther.getText());
+									fileRdf.add(rdfFile);
+									try (InputStream input = AddXmlNode.class.getClassLoader()
+											.getResourceAsStream(Constante.rdfFileName)) {
+										Properties prop = new Properties();
+										if (input == null) {
+											System.out.println("Sorry, unable to find rdf.properties");
+										}
+										// load a properties file from class path, inside static method
+										prop.load(input);
+										// get the property value and print it out
+										Pattern patt = Pattern.compile(Constante.namePattern);
+										for (Entry<Object, Object> each : prop.entrySet()) {
+											final Matcher m = patt.matcher((String) each.getKey());
+											if (m.find()) {
+												String[] words = ((String) each.getKey()).split(Constante.namePattern2);
+												matchingKey.add(words[1]);
+												map1.put(words[1], (String) each.getValue());
+											}
+										}
+									} catch (final IOException ex) {
+										ex.printStackTrace();
+									}
+									if (fileRdf != null) {
+										if (!fileRdf.isEmpty()) {
+											for (final File file : fileRdf) {
+												if (getExtension(file.getAbsolutePath()).equals(Constante.rdf)) {
+													List<String> listStr = new ArrayList<String>();
+													final String fileName = file.getName().trim();
+													String fileDestName = null;
+													for (Map.Entry<String, String> mapentry : map1.entrySet()) {
+														if (fileName.toUpperCase()
+																.contains((CharSequence) mapentry.getKey())) {
+															fileDestName = (String) mapentry.getValue();
+															break;
+														}
+													}
+													try {
+														listStr = parse(file.getAbsolutePath());
+														DocumentBuilderFactory documentFactory = DocumentBuilderFactory
+																.newInstance();
+														DocumentBuilder documentBuilder = documentFactory
+																.newDocumentBuilder();
+														Document document = documentBuilder.newDocument();
+														// root element
+														Element root = document.createElement(Constante.rdf_RDF);
+														document.appendChild(root);
+														if (!mapSnomed.isEmpty()) {
+															for (Map.Entry<String, String> mapentry : mapSnomed
+																	.entrySet()) {
+																final String key = (String) mapentry.getKey();
+																final String value = (String) mapentry.getValue();
+																final Attr attr = document.createAttribute(key);
+																attr.setValue(value);
+																root.setAttributeNode(attr);
+															}
+														}
+														// notation element
+														if (listStr != null) {
+															if (!listStr.isEmpty()) {
+																for (String str : listStr) {
+																	// description element
+																	Element description = document
+																			.createElement(Constante.description);
+																	root.appendChild(description);
+																	Element notation = document
+																			.createElement(Constante.notation);
+																	notation.appendChild(document.createTextNode(str));
+																	description.appendChild(notation);
+																}
+																document.normalize();
+																File xml = prettyPrint(document,
+																		new File(textFieldPS.getText()).getParent(),
+																		fileDestName.trim());
+																listTermino.add(xml.getAbsolutePath());
+															}
+														}
+
+													} catch (final ParserConfigurationException e) {
+
+														e.printStackTrace();
+													} catch (final SAXException e) {
+
+														e.printStackTrace();
+													} catch (final IOException e) {
+
+														e.printStackTrace();
+													} catch (final Exception e) {
+
+														e.printStackTrace();
+													}
 												}
 											}
 										}
-										final Alert alert = new Alert(AlertType.INFORMATION);
-										final DialogPane dialogPane = alert.getDialogPane();
-										dialogPane.getStylesheets()
-												.add(getClass().getResource(Constante.style).toExternalForm());
-										dialogPane.getStyleClass().add(Constante.dialog);
-										dialogPane.setMinHeight(130);
-										dialogPane.setMaxHeight(130);
-										dialogPane.setPrefHeight(130);
-										alert.setContentText(Constante.alert2);
-										alert.setHeaderText(null);
-										alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-										alert.showAndWait();
-										thirdStage.close();
-										textLogin.setText("");
-										textPwd.setText("");
-										String outputDir = Constante.textFieldRDF;
-										deleteDirectory(new File(outputDir));
-									} else {
-										thirdStage.close();
-										textLogin.setText("");
-										textPwd.setText("");
 									}
-								} else {
-									thirdStage.close();
+								}
+								if (passed == true) {
+									final Alert alert = new Alert(AlertType.INFORMATION);
+									final DialogPane dialogPane = alert.getDialogPane();
+									dialogPane.getStylesheets()
+											.add(getClass().getResource(Constante.style).toExternalForm());
+									dialogPane.getStyleClass().add(Constante.dialog);
+									if (listTermino.size() <= 5) {
+										dialogPane.setMinHeight(200);
+										dialogPane.setMaxHeight(200);
+										dialogPane.setPrefHeight(200);
+									} else {
+										dialogPane.setMinHeight(270);
+										dialogPane.setMaxHeight(270);
+										dialogPane.setPrefHeight(270);
+									}
+									if (listTermino != null) {
+										if (!listTermino.isEmpty()) {
+											for (final String termino : listTermino) {
+												text = text + termino + Constante.retourChariot;
+											}
+										}
+									}
+									alert.setContentText(Constante.terminoGenerated + Constante.retourChariot
+											+ Constante.retourChariot + text);
+									alert.setHeaderText(null);
+									alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+									alert.showAndWait();
 									textLogin.setText("");
 									textPwd.setText("");
+									String outputDir = Constante.textFieldRDF;
+									fieldOther.setText("");
+									field.setText("");
+									selectedList = new ArrayList<String>();
+									count = 0;
+									passed = false;
+									thirdStage.close();
+									deleteDirectory(new File(outputDir));
+
+								} else {
+									final Alert alert = new Alert(AlertType.ERROR);
+									final DialogPane dialogPane = alert.getDialogPane();
+									dialogPane.getStylesheets()
+											.add(getClass().getResource(Constante.style).toExternalForm());
+									dialogPane.getStyleClass().add(Constante.dialog);
+									dialogPane.setMinHeight(150);
+									dialogPane.setMaxHeight(150);
+									dialogPane.setPrefHeight(150);
+									alert.setContentText(Constante.alert9);
+									alert.setHeaderText(null);
+									alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+									alert.showAndWait();
+									count = 0;
+									passed = false;
 								}
-							});
-						} else if (textLogin.getText().isEmpty() && textPwd.getText().isEmpty()
-								&& selectedList.isEmpty()) {
-							final Alert alert = new Alert(AlertType.ERROR);
-							final DialogPane dialogPane = alert.getDialogPane();
-							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
-							dialogPane.getStyleClass().add(Constante.dialog);
-							dialogPane.setMinHeight(130);
-							dialogPane.setMaxHeight(130);
-							dialogPane.setPrefHeight(130);
-							alert.setContentText(Constante.alert8);
-							alert.setHeaderText(null);
-							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-							alert.showAndWait();
-						} else if (textLogin.getText().isEmpty() && !textPwd.getText().isEmpty()
-								&& !selectedList.isEmpty()) {
-							final Alert alert = new Alert(AlertType.ERROR);
-							final DialogPane dialogPane = alert.getDialogPane();
-							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
-							dialogPane.getStyleClass().add(Constante.dialog);
-							dialogPane.setMinHeight(130);
-							dialogPane.setMaxHeight(130);
-							dialogPane.setPrefHeight(130);
-							alert.setContentText(Constante.alert13);
-							alert.setHeaderText(null);
-							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-							alert.showAndWait();
-						} else if (!textLogin.getText().isEmpty() && textPwd.getText().isEmpty()
-								&& !selectedList.isEmpty()) {
-							final Alert alert = new Alert(AlertType.ERROR);
-							final DialogPane dialogPane = alert.getDialogPane();
-							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
-							dialogPane.getStyleClass().add(Constante.dialog);
-							dialogPane.setMinHeight(130);
-							dialogPane.setMaxHeight(130);
-							dialogPane.setPrefHeight(130);
-							alert.setContentText(Constante.alert14);
-							alert.setHeaderText(null);
-							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-							alert.showAndWait();
-						} else if (!textLogin.getText().isEmpty() && !textPwd.getText().isEmpty()
-								&& selectedList.isEmpty()) {
-							final Alert alert = new Alert(AlertType.ERROR);
-							final DialogPane dialogPane = alert.getDialogPane();
-							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
-							dialogPane.getStyleClass().add(Constante.dialog);
-							dialogPane.setMinHeight(130);
-							dialogPane.setMaxHeight(130);
-							dialogPane.setPrefHeight(130);
-							alert.setContentText(Constante.alert15);
-							alert.setHeaderText(null);
-							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-							alert.showAndWait();
-						} else if (!textLogin.getText().isEmpty() && textPwd.getText().isEmpty()
-								&& selectedList.isEmpty()) {
-							final Alert alert = new Alert(AlertType.ERROR);
-							final DialogPane dialogPane = alert.getDialogPane();
-							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
-							dialogPane.getStyleClass().add(Constante.dialog);
-							dialogPane.setMinHeight(130);
-							dialogPane.setMaxHeight(130);
-							dialogPane.setPrefHeight(130);
-							alert.setContentText(Constante.alert16);
-							alert.setHeaderText(null);
-							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-							alert.showAndWait();
-						} else if (textLogin.getText().isEmpty() && !textPwd.getText().isEmpty()
-								&& selectedList.isEmpty()) {
-							final Alert alert = new Alert(AlertType.ERROR);
-							final DialogPane dialogPane = alert.getDialogPane();
-							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
-							dialogPane.getStyleClass().add(Constante.dialog);
-							dialogPane.setMinHeight(130);
-							dialogPane.setMaxHeight(130);
-							dialogPane.setPrefHeight(130);
-							alert.setContentText(Constante.alert17);
-							alert.setHeaderText(null);
-							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-							alert.showAndWait();
-						} else if (textLogin.getText().isEmpty() && textPwd.getText().isEmpty()
-								&& !selectedList.isEmpty()) {
-							final Alert alert = new Alert(AlertType.ERROR);
-							final DialogPane dialogPane = alert.getDialogPane();
-							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
-							dialogPane.getStyleClass().add(Constante.dialog);
-							dialogPane.setMinHeight(130);
-							dialogPane.setMaxHeight(130);
-							dialogPane.setPrefHeight(130);
-							alert.setContentText(Constante.alert18);
-							alert.setHeaderText(null);
-							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-							alert.showAndWait();
-						} else {
-							final Alert alert = new Alert(AlertType.ERROR);
-							final DialogPane dialogPane = alert.getDialogPane();
-							dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
-							dialogPane.getStyleClass().add(Constante.dialog);
-							dialogPane.setMinHeight(130);
-							dialogPane.setMaxHeight(130);
-							dialogPane.setPrefHeight(130);
-							alert.setContentText(Constante.alert19);
-							alert.setHeaderText(null);
-							alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-							alert.showAndWait();
-						}
+							} else {
+								final Alert alert = new Alert(AlertType.ERROR);
+								final DialogPane dialogPane = alert.getDialogPane();
+								dialogPane.getStylesheets()
+										.add(getClass().getResource(Constante.style).toExternalForm());
+								dialogPane.getStyleClass().add(Constante.dialog);
+								dialogPane.setMinHeight(150);
+								dialogPane.setMaxHeight(150);
+								dialogPane.setPrefHeight(150);
+								alert.setContentText(Constante.alert9);
+								alert.setHeaderText(null);
+								alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+								alert.showAndWait();
+								count = 0;
+								passed = false;
+							}
+						});
 					}
 				});
 
@@ -1083,7 +1685,16 @@ public class AddXmlNode extends Application {
 				final String url = textFieldUrl.getText();
 				runTask(taskUpdateStage, progress);
 				Platform.runLater(() -> {
-					final String home = System.getProperty(Constante.image8);
+					final String home = new File(Constante.textFieldPS).getParent();
+					final File folder = new File(home + Constante.image9);
+					if (!folder.exists()) {
+						Path path = Paths.get(folder.getPath());
+						try {
+							Files.createDirectory(path);
+						} catch (final IOException e) {
+							e.printStackTrace();
+						}
+					}
 					final File file = new File(home + Constante.image9 + Constante.urlFile);
 					try {
 						downloadUsingNIO(url, file.getAbsolutePath());
@@ -1104,29 +1715,13 @@ public class AddXmlNode extends Application {
 						isOk = false;
 					}
 					if (isOk == true) {
-						final Alert alert = new Alert(AlertType.INFORMATION);
-						final DialogPane dialogPane = alert.getDialogPane();
-						dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
-						dialogPane.getStyleClass().add(Constante.dialog);
-						dialogPane.setMinHeight(150);
-						dialogPane.setMaxHeight(150);
-						dialogPane.setPrefHeight(150);
-						alert.setContentText(Constante.alert2);
-						alert.setHeaderText(null);
-						final ButtonType okButtonType = new ButtonType("OK");
-						alert.getButtonTypes().setAll(okButtonType);
-						Optional<ButtonType> result = alert.showAndWait();
-						if (result.get() == okButtonType) {
-							String ZipFilePath = file.getAbsolutePath();
-							String DestFilePath = Constante.textFieldPS;
-							try {
-								unzip(ZipFilePath, DestFilePath);
-								hb.setVisible(true);
-								dialogPane.setVisible(false);
-								alert.close();
-							} catch (final IOException e) {
-								e.printStackTrace();
-							}
+						final String zipFilePath = file.getAbsolutePath();
+						final String DestFilePath = file.getParent();
+						try {
+							unzip(zipFilePath, DestFilePath);
+							hb.setVisible(true);
+						} catch (final IOException e) {
+							e.printStackTrace();
 						}
 					}
 				});
@@ -1174,6 +1769,8 @@ public class AddXmlNode extends Application {
 				isOkGenerate = false;
 				files = new ArrayList<File>();
 				filesB = new ArrayList<File>();
+				listF = new ArrayList<File>();
+				listFR = new ArrayList<File>();
 				finalFiles = new ArrayList<File>();
 				list.getItems().clear();
 				listB.getItems().clear();
@@ -1222,6 +1819,10 @@ public class AddXmlNode extends Application {
 
 				else {
 					runTask(taskUpdateStage, progress);
+					final File generated = new File(Constante.textFieldP);
+					if (generated.exists()) {
+						generated.delete();
+					}
 					Document doc = null;
 					final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 					dbf.setIgnoringElementContentWhitespace(true);
@@ -1233,7 +1834,7 @@ public class AddXmlNode extends Application {
 					}
 					final Document document = db.newDocument();
 					// add elements to Document
-					final Element rootElement = document.createElement("Racine");
+					final Element rootElement = document.createElement(Constante.terminologies);
 					// append root element to document
 					document.appendChild(rootElement);
 					for (File file : finalFiles) {
@@ -1241,41 +1842,41 @@ public class AddXmlNode extends Application {
 							try (InputStream is = new FileInputStream(file)) {
 								doc = db.parse(is);
 
-								final NodeList nodes = doc.getElementsByTagName("ConceptList");
+								final NodeList nodes = doc.getElementsByTagName(Constante.conceptList);
 								if (nodes != null) {
 									for (int h = 0; h < nodes.getLength(); h++) {
 										if (nodes.item(h) instanceof Element) {
 											Element elem = (Element) nodes.item(h);
-											doc.renameNode(elem, elem.getNamespaceURI(), "conceptList");
+											doc.renameNode(elem, elem.getNamespaceURI(), Constante.conceptList2);
 										}
 									}
 								}
-								final NodeList nodesC = doc.getElementsByTagName("Concept");
+								final NodeList nodesC = doc.getElementsByTagName(Constante.concept);
 								if (nodesC != null) {
 									for (int n = 0; n < nodesC.getLength(); n++) {
 										if (nodesC.item(n) instanceof Element) {
 											final Element elem = (Element) nodesC.item(n);
-											doc.renameNode(elem, elem.getNamespaceURI(), "concept");
+											doc.renameNode(elem, elem.getNamespaceURI(), Constante.concept2);
 										}
 									}
 								}
-								final NodeList listOfStaff = doc.getElementsByTagName("ValueSet");
+								final NodeList listOfStaff = doc.getElementsByTagName(Constante.valueSet);
 								if (listOfStaff != null) {
 									for (int i = 0; i < listOfStaff.getLength(); i++) {
 										if (listOfStaff.item(i) instanceof Element) {
 											final Element elem = (Element) listOfStaff.item(i);
-											doc.renameNode(elem, elem.getNamespaceURI(), "valueSet");
+											doc.renameNode(elem, elem.getNamespaceURI(), Constante.valueSet2);
 										}
 
 										org.w3c.dom.Node staff = listOfStaff.item(i);
 										org.w3c.dom.Node importedNode = document.importNode(staff, true);
-										String key = importedNode.getAttributes().getNamedItem("displayName")
+										String key = importedNode.getAttributes().getNamedItem(Constante.displayName)
 												.getNodeValue();
-										if (key.contains(".tabs")) {
-											key = key.replace(".tabs", "");
+										if (key.contains(Constante.tab)) {
+											key = key.replace(Constante.tab, "");
 										}
-										((Element) importedNode).setAttribute("name", key);
-										((Element) importedNode).setAttribute("displayName", key);
+										((Element) importedNode).setAttribute(Constante.nameAttribute, key);
+										((Element) importedNode).setAttribute(Constante.displayName, key);
 
 										DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 										String formatDateTime = picker.getDateTimeValue().format(format);
@@ -1283,52 +1884,52 @@ public class AddXmlNode extends Application {
 										String[] words = formatDateTime.split(" ");
 										dateFinal = words[0] + "T" + words[1];
 
-										((Element) importedNode).setAttribute("effectiveDate", dateFinal);
-										((Element) importedNode).setAttribute("statusCode",
+										((Element) importedNode).setAttribute(Constante.effectiveDate, dateFinal);
+										((Element) importedNode).setAttribute(Constante.statusCode,
 												comboBox.getSelectionModel().getSelectedItem());
 										if (textField2 != null) {
 											if (textField2.getText() != null) {
-												((Element) importedNode).setAttribute("versionLabel",
+												((Element) importedNode).setAttribute(Constante.versionLabel,
 														textField2.getText());
 											} else {
-												((Element) importedNode).setAttribute("versionLabel", "");
+												((Element) importedNode).setAttribute(Constante.versionLabel, "");
 											}
 										} else {
-											((Element) importedNode).setAttribute("versionLabel", "");
+											((Element) importedNode).setAttribute(Constante.versionLabel, "");
 										}
 
 										final org.w3c.dom.Node att = importedNode.getAttributes()
-												.getNamedItem("version");
+												.getNamedItem(Constante.version);
 										if (att != null) {
 											importedNode.getAttributes().removeNamedItem(att.getNodeName());
 										}
 										final org.w3c.dom.Node att1 = importedNode.getAttributes()
-												.getNamedItem("dateFin");
+												.getNamedItem(Constante.dateFin);
 										if (att1 != null) {
 											importedNode.getAttributes().removeNamedItem(att1.getNodeName());
 										}
 										final org.w3c.dom.Node att2 = importedNode.getAttributes()
-												.getNamedItem("dateMaj");
+												.getNamedItem(Constante.dateMaj);
 										if (att2 != null) {
 											importedNode.getAttributes().removeNamedItem(att2.getNodeName());
 										}
 										final org.w3c.dom.Node att3 = importedNode.getAttributes()
-												.getNamedItem("dateValid");
+												.getNamedItem(Constante.dateValid);
 										if (att3 != null) {
 											importedNode.getAttributes().removeNamedItem(att3.getNodeName());
 										}
 										final org.w3c.dom.Node att4 = importedNode.getAttributes()
-												.getNamedItem("description");
+												.getNamedItem(Constante.desc);
 										if (att4 != null) {
 											importedNode.getAttributes().removeNamedItem(att4.getNodeName());
 										}
 										final org.w3c.dom.Node att5 = importedNode.getAttributes()
-												.getNamedItem("typeFichier");
+												.getNamedItem(Constante.typeFichier);
 										if (att5 != null) {
 											importedNode.getAttributes().removeNamedItem(att5.getNodeName());
 										}
 										final org.w3c.dom.Node att6 = importedNode.getAttributes()
-												.getNamedItem("urlFichier");
+												.getNamedItem(Constante.urlFichier);
 										if (att6 != null) {
 											importedNode.getAttributes().removeNamedItem(att6.getNodeName());
 										}
@@ -1342,38 +1943,44 @@ public class AddXmlNode extends Application {
 													for (int k = 0; k < listk.getLength(); k++) {
 														final org.w3c.dom.Node item = listk.item(k);
 														if (item.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+															final Element elem = (Element) item;
+															if (!elem.getAttribute(Constante.dateFin).isEmpty()) {
+																elem.getParentNode().removeChild(elem);
+															}
+															final org.w3c.dom.Node att7 = item.getAttributes()
+																	.getNamedItem(Constante.dateFin);
 															if (textFieldL != null) {
 																if (textFieldL.getText() != null) {
-																	((Element) item).setAttribute("level",
+																	((Element) item).setAttribute(Constante.level,
 																			textFieldL.getText());
 																} else {
-																	((Element) item).setAttribute("level", "");
+																	((Element) item).setAttribute(Constante.level, "");
 																}
 															} else {
-																((Element) item).setAttribute("level", "");
+																((Element) item).setAttribute(Constante.level, "");
 															}
 															if (textFieldT != null) {
 																if (textFieldT.getText() != null) {
-																	((Element) item).setAttribute("type",
+																	((Element) item).setAttribute(Constante.type,
 																			textFieldT.getText());
 																} else {
-																	((Element) item).setAttribute("type", "");
+																	((Element) item).setAttribute(Constante.type, "");
 																}
 															} else {
-																((Element) item).setAttribute("type", "");
+																((Element) item).setAttribute(Constante.type, "");
 															}
-															final org.w3c.dom.Node att7 = item.getAttributes()
-																	.getNamedItem("dateFin");
+
 															if (att7 != null) {
 																item.getAttributes()
 																		.removeNamedItem(att7.getNodeName());
 															}
 															final org.w3c.dom.Node att8 = item.getAttributes()
-																	.getNamedItem("dateValid");
+																	.getNamedItem(Constante.dateValid);
 															if (att8 != null) {
 																item.getAttributes()
 																		.removeNamedItem(att8.getNodeName());
 															}
+
 														}
 													}
 												}
@@ -1416,6 +2023,17 @@ public class AddXmlNode extends Application {
 								alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
 								alert.showAndWait();
 								isOkGenerate = false;
+								files = new ArrayList<File>();
+								filesB = new ArrayList<File>();
+								listF = new ArrayList<File>();
+								listFR = new ArrayList<File>();
+								finalFiles = new ArrayList<File>();
+								list.getCheckModel().clearChecks();
+								listB.getCheckModel().clearChecks();
+								list.getItems().clear();
+								listB.getItems().clear();
+								selectAll.setSelected(false);
+								hb.setVisible(false);
 							}
 						} catch (final FileNotFoundException e) {
 							e.printStackTrace();
@@ -1425,15 +2043,6 @@ public class AddXmlNode extends Application {
 							e.printStackTrace();
 						}
 					}
-					files = new ArrayList<File>();
-					filesB = new ArrayList<File>();
-					finalFiles = new ArrayList<File>();
-					list.getItems().clear();
-					listB.getItems().clear();
-					list.getCheckModel().clearChecks();
-					listB.getCheckModel().clearChecks();
-					selectAll.setSelected(false);
-					hb.setVisible(false);
 				}
 			}
 		});
@@ -1449,7 +2058,6 @@ public class AddXmlNode extends Application {
 		hb.setPadding(new Insets(0, 0, 0, 8));
 		ObservableList<Node> listHb = hb.getChildren();
 		listHb.addAll(selectAll, spacer16, labelSelectAll);
-
 		Platform.runLater(() -> {
 			selectAll.selectedProperty().addListener(new ChangeListener<Boolean>() {
 				@Override
@@ -1497,7 +2105,7 @@ public class AddXmlNode extends Application {
 			public void handle(final ActionEvent event) {
 				runTask(taskUpdateStage, progress);
 				Platform.runLater(() -> {
-					if (files.isEmpty()) {
+					if (files.isEmpty() && listB.getCheckModel().isEmpty()) {
 						final Alert alert = new Alert(AlertType.ERROR);
 						final DialogPane dialogPane = alert.getDialogPane();
 						dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
@@ -1510,6 +2118,34 @@ public class AddXmlNode extends Application {
 						alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
 						alert.showAndWait();
 					} else {
+						List<File> lfileFinal = new ArrayList<File>();
+						listFR = new ArrayList<File>();
+						ObservableList<File> lfile = listB.getCheckModel().getCheckedItems();
+						if (lfile != null) {
+							if (!lfile.isEmpty()) {
+								for (File f : lfile) {
+									try {
+										Files.copy(f.toPath(), Path.of(Constante.textFieldPS + f.getName()),
+												StandardCopyOption.REPLACE_EXISTING);
+										lfileFinal.add(f);
+									} catch (final IOException e) {
+										e.printStackTrace();
+									}
+								}
+								final File[] list = new File(Constante.textFieldPS).listFiles();
+								for (File file : list) {
+									if (!file.isDirectory()) {
+										for (File f : lfileFinal) {
+											if (file.getName().equals(f.getName()) && !listFR.contains(f)) {
+												listFR.add(file);
+											}
+										}
+									}
+								}
+								filesB = new ArrayList<File>();
+								listB.getItems().clear();
+							}
+						}
 						for (final File file : files) {
 							final String ext = getExtension(file.getAbsolutePath());
 							if (ext.equals(Constante.xlsm) || ext.equals(Constante.xlsx)) {
@@ -1526,14 +2162,11 @@ public class AddXmlNode extends Application {
 								final int maxColumn = worksheet.getLastColumn();
 								// Loop through the rows
 								for (int row = 2; row <= maxRow; row++) {
-//									boolean hide = worksheet.getRowIsHide(row);
-//									if (hide == false) {
 									RetrieveValueSetResponse response = new RetrieveValueSetResponse();
 									// Loop through the columns
 									for (int col = 1; col <= maxColumn; col++) {
 										// Get the current cell
 										CellRange cell = worksheet.getCellRange(row, col);
-//											if (cell.getCellStyle().getExcelFont().isStrikethrough() == false) {
 										if (col == 1) {
 											response.setValueSetOID(cell.getValue());
 										}
@@ -1558,14 +2191,10 @@ public class AddXmlNode extends Application {
 										if (col == 8) {
 											response.setDateFin(cell.getValue());
 										}
-//											} else {
-//												break;
-//											}
 									}
 									if (response.getValueSetOID() != null) {
 										listR.add(response);
 									}
-//									}
 								}
 
 								// Get the row count
@@ -1574,14 +2203,11 @@ public class AddXmlNode extends Application {
 								final int maxColumn1 = worksheet1.getLastColumn();
 								// Loop through the rows
 								for (int row = 2; row <= maxRow1; row++) {
-//									final boolean hide = worksheet1.getRowIsHide(row);
-//									if (hide == false) {
 									RetrieveValueSetResponse response = new RetrieveValueSetResponse();
 									// Loop through the columns
 									for (int col = 1; col <= maxColumn1; col++) {
 										// Get the current cell
 										final CellRange cell = worksheet1.getCellRange(row, col);
-//											if (cell.getCellStyle().getExcelFont().isStrikethrough() == false) {
 										if (col == 1) {
 											response.setValueSetOID(cell.getValue());
 										}
@@ -1606,17 +2232,12 @@ public class AddXmlNode extends Application {
 										if (col == 8) {
 											response.setDateFin(cell.getValue());
 										}
-//											} else {
-//												break;
-//											}
 									}
 									if (response.getValueSetOID() != null) {
 										listR.add(response);
 									}
-//									}
 								}
 
-								Boolean isOk = false;
 								Map<String, List<RetrieveValueSetResponse>> resultMap = listR.stream()
 										.collect(Collectors.groupingBy(RetrieveValueSetResponse::getValueSetOID));
 
@@ -1627,27 +2248,9 @@ public class AddXmlNode extends Application {
 									@SuppressWarnings("unchecked")
 									List<RetrieveValueSetResponse> result2 = new ArrayList<RetrieveValueSetResponse>(
 											(List<RetrieveValueSetResponse>) mapentry.getValue());
-									isOk = CreateXMLFile.createXMLFile(result2, textFieldPS.getText());
+									CreateXMLFile.createXMLFile(result2, textFieldPS.getText());
 									final File f = CreateXMLFile.getCreatedFile();
 									listF.add(f);
-								}
-								if (isOk == true) {
-									final Alert alert = new Alert(AlertType.INFORMATION);
-									final DialogPane dialogPane = alert.getDialogPane();
-									dialogPane.getStylesheets()
-											.add(getClass().getResource(Constante.style).toExternalForm());
-									dialogPane.getStyleClass().add(Constante.dialog);
-									dialogPane.setMinHeight(130);
-									dialogPane.setMaxHeight(130);
-									dialogPane.setPrefHeight(130);
-									alert.setContentText(Constante.alert2);
-									alert.setHeaderText(null);
-									alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
-									alert.showAndWait();
-									isOkGenerate = false;
-									files = new ArrayList<File>();
-									list.getItems().clear();
-
 								}
 								workbook.dispose();
 							}
@@ -1656,10 +2259,16 @@ public class AddXmlNode extends Application {
 							files.add(pathname);
 						}
 
+						for (final File pathname : listFR) {
+							filesB.add(pathname);
+						}
+
 						if (files != null) {
 							final ObservableList<File> oblist = FXCollections.observableArrayList();
 							for (int i = 0; i < files.size(); i++) {
-								oblist.add(files.get(i));
+								if (files.get(i).getName().endsWith("xml")) {
+									oblist.add(files.get(i));
+								}
 							}
 							list.setItems(oblist);
 							if (finalFiles == null) {
@@ -1695,6 +2304,59 @@ public class AddXmlNode extends Application {
 							});
 							list.getCheckModel().checkAll();
 						}
+						if (filesB != null) {
+							final ObservableList<File> oblist = FXCollections.observableArrayList();
+							for (int i = 0; i < filesB.size(); i++) {
+								oblist.add(filesB.get(i));
+							}
+							listB.setItems(oblist);
+							if (finalFiles == null) {
+								finalFiles = new ArrayList<File>();
+							}
+							listB.setCellFactory(lv -> new CheckBoxListCell<File>(listB::getItemBooleanProperty) {
+								@Override
+								public void updateItem(File employee, boolean empty) {
+									super.updateItem(employee, empty);
+									setText(employee == null ? "" : String.format(employee.getAbsolutePath()));
+								}
+							});
+
+							listB.getCheckModel().getCheckedIndices().addListener(new ListChangeListener<Integer>() {
+								@Override
+								public void onChanged(
+										javafx.collections.ListChangeListener.Change<? extends Integer> c) {
+									while (c.next()) {
+										if (c.wasAdded()) {
+											for (int i : c.getAddedSubList()) {
+												if (!finalFiles.contains(listB.getItems().get(i))) {
+													finalFiles.add(listB.getItems().get(i));
+												}
+											}
+										}
+										if (c.wasRemoved()) {
+											for (int i : c.getRemoved()) {
+												finalFiles.remove(listB.getItems().get(i));
+											}
+										}
+									}
+								}
+							});
+							selectAll.setSelected(true);
+							listB.getCheckModel().checkAll();
+
+						}
+						final Alert alert = new Alert(AlertType.INFORMATION);
+						final DialogPane dialogPane = alert.getDialogPane();
+						dialogPane.getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
+						dialogPane.getStyleClass().add(Constante.dialog);
+						dialogPane.setMinHeight(130);
+						dialogPane.setMaxHeight(130);
+						dialogPane.setPrefHeight(130);
+						alert.setContentText(Constante.alert2);
+						alert.setHeaderText(null);
+						alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
+						alert.showAndWait();
+						isOkGenerate = false;
 					}
 				});
 			}
@@ -1702,7 +2364,7 @@ public class AddXmlNode extends Application {
 
 		list.setPrefHeight(650);
 
-		// scene principal pour le convertisseur
+		// scene principal du convertisseur
 		final Scene scene = new Scene(root, Color.BEIGE);
 		scene.getRoot().getStylesheets().add(getClass().getResource(Constante.style).toExternalForm());
 		stage.getIcons().add(new Image(getClass().getClassLoader().getResourceAsStream(Constante.photo)));
@@ -1757,10 +2419,17 @@ public class AddXmlNode extends Application {
 					buttonTermino1.setMinHeight(30);
 					buttonTermino1.setMaxHeight(30);
 					buttonTermino1.setStyle(Constante.style1);
+					chooseFile.setPrefWidth(150);
+					chooseFile.setPrefHeight(30);
+					chooseFile.setMinHeight(30);
+					chooseFile.setMaxHeight(30);
+					chooseFile.setStyle(Constante.style1);
 					textPwd.setStyle(Constante.style8);
 					textLogin.setStyle(Constante.style8);
 					labelPwd.setStyle(Constante.style5);
 					labelLog.setStyle(Constante.style5);
+					firstTitledPane.setStyle(Constante.style5);
+					labelContent.setStyle(Constante.style5);
 					button1.setPrefWidth(160);
 					button1.setPrefHeight(30);
 					button1.setMinHeight(30);
@@ -1781,11 +2450,11 @@ public class AddXmlNode extends Application {
 					button4.setPrefHeight(30);
 					button4.setMinHeight(30);
 					button4.setMaxHeight(30);
-					textFieldUrl.setPrefWidth(680);
 					list.setPrefWidth((newSceneWidth.doubleValue() - 10) / 2);
 					listB.setPrefWidth((newSceneWidth.doubleValue() - 10) / 2);
 					pane.setPrefWidth(width);
 					label.setStyle(Constante.style5);
+					lContent.setStyle(Constante.style5);
 					label1.setStyle(Constante.style5);
 					label2.setStyle(Constante.style5);
 					textField2.setStyle(Constante.style5);
@@ -1798,9 +2467,12 @@ public class AddXmlNode extends Application {
 					labelPS.setStyle(Constante.style5);
 					textFieldPS.setStyle(Constante.style5);
 					labelUrl.setStyle(Constante.style5);
+					textFieldUrl.setPrefWidth(680);
 					textFieldUrl.setStyle(Constante.style5);
+					field.setStyle(Constante.style5);
 					labelEmpty.setStyle(Constante.style5);
 					comboBox.setStyle(Constante.style5);
+					titledPane.setStyle(Constante.style5);
 					picker.setStyle(Constante.style5);
 					file.setStyle(Constante.style2);
 					item.setStyle(Constante.style2);
@@ -1834,6 +2506,11 @@ public class AddXmlNode extends Application {
 					buttonTermino1.setMinHeight(50);
 					buttonTermino1.setMaxHeight(50);
 					buttonTermino1.setStyle(Constante.style3);
+					chooseFile.setPrefWidth(180);
+					chooseFile.setPrefHeight(50);
+					chooseFile.setMinHeight(50);
+					chooseFile.setMaxHeight(50);
+					chooseFile.setStyle(Constante.style3);
 					textPwd.setStyle(Constante.style11);
 					textLogin.setStyle(Constante.style11);
 					labelPwd.setStyle(Constante.style11);
@@ -1863,6 +2540,7 @@ public class AddXmlNode extends Application {
 					listB.setPrefWidth((newSceneWidth.doubleValue() - 10) / 2);
 					pane.setPrefWidth(width);
 					label.setStyle(Constante.style11);
+					lContent.setStyle(Constante.style11);
 					label1.setStyle(Constante.style11);
 					label2.setStyle(Constante.style11);
 					textField2.setStyle(Constante.style11);
@@ -1874,8 +2552,12 @@ public class AddXmlNode extends Application {
 					textFieldP.setStyle(Constante.style11);
 					labelPS.setStyle(Constante.style11);
 					textFieldPS.setStyle(Constante.style11);
+					titledPane.setStyle(Constante.style11);
 					labelUrl.setStyle(Constante.style11);
 					textFieldUrl.setStyle(Constante.style11);
+					firstTitledPane.setStyle(Constante.style11);
+					labelContent.setStyle(Constante.style11);
+					field.setStyle(Constante.style11);
 					labelEmpty.setStyle(Constante.style11);
 					comboBox.setStyle(Constante.style11);
 					picker.setStyle(Constante.style11);
@@ -1910,10 +2592,17 @@ public class AddXmlNode extends Application {
 					buttonTermino1.setMinHeight(20);
 					buttonTermino1.setMaxHeight(20);
 					buttonTermino1.setStyle(Constante.style13);
+					chooseFile.setPrefWidth(80);
+					chooseFile.setPrefHeight(20);
+					chooseFile.setMinHeight(20);
+					chooseFile.setMaxHeight(20);
+					chooseFile.setStyle(Constante.style13);
 					textPwd.setStyle(Constante.style14);
 					textLogin.setStyle(Constante.style14);
 					labelPwd.setStyle(Constante.style14);
 					labelLog.setStyle(Constante.style14);
+					firstTitledPane.setStyle(Constante.style14);
+					labelContent.setStyle(Constante.style14);
 					textFieldUrl.setPrefWidth(550);
 					button1.setPrefWidth(120);
 					button1.setPrefHeight(20);
@@ -1939,6 +2628,7 @@ public class AddXmlNode extends Application {
 					listB.setPrefWidth((newSceneWidth.doubleValue() - 10) / 2);
 					pane.setPrefWidth(width);
 					label.setStyle(Constante.style14);
+					lContent.setStyle(Constante.style14);
 					label1.setStyle(Constante.style14);
 					label2.setStyle(Constante.style14);
 					textField2.setStyle(Constante.style14);
@@ -1948,10 +2638,12 @@ public class AddXmlNode extends Application {
 					textFieldT.setStyle(Constante.style14);
 					labelP.setStyle(Constante.style14);
 					textFieldP.setStyle(Constante.style14);
+					titledPane.setStyle(Constante.style14);
 					labelPS.setStyle(Constante.style14);
 					textFieldPS.setStyle(Constante.style14);
 					labelUrl.setStyle(Constante.style14);
 					textFieldUrl.setStyle(Constante.style14);
+					field.setStyle(Constante.style14);
 					labelEmpty.setStyle(Constante.style14);
 					comboBox.setStyle(Constante.style14);
 					picker.setStyle(Constante.style14);
@@ -2102,26 +2794,6 @@ public class AddXmlNode extends Application {
 						setText(employee == null ? "" : String.format(employee.getAbsolutePath()));
 					}
 				});
-
-				listB.getCheckModel().getCheckedIndices().addListener(new ListChangeListener<Integer>() {
-					@Override
-					public void onChanged(javafx.collections.ListChangeListener.Change<? extends Integer> c) {
-						while (c.next()) {
-							if (c.wasAdded()) {
-								for (int i : c.getAddedSubList()) {
-									if (!finalFiles.contains(listB.getItems().get(i))) {
-										finalFiles.add(listB.getItems().get(i));
-									}
-								}
-							}
-							if (c.wasRemoved()) {
-								for (int i : c.getRemoved()) {
-									finalFiles.remove(listB.getItems().get(i));
-								}
-							}
-						}
-					}
-				});
 				hb.setVisible(true);
 			}
 			zip_Input_Stream.close();
@@ -2150,20 +2822,66 @@ public class AddXmlNode extends Application {
 	}
 
 	/**
-	 * parse xml file
 	 * 
 	 * @param filePath
-	 * @return
-	 * @throws ParserConfigurationException
-	 * @throws SAXException
 	 * @throws IOException
+	 * @throws XMLStreamException
 	 */
-	private Document parseXML(final String filePath) throws ParserConfigurationException, SAXException, IOException {
-		final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-		final DocumentBuilder db = dbf.newDocumentBuilder();
-		final Document doc = db.parse(filePath);
-		doc.getDocumentElement().normalize();
-		return doc;
+	private List<String> parse(final String filePath) throws IOException, XMLStreamException {
+		List<String> list = new ArrayList<String>();
+		mapSnomed = new HashMap<String, String>();
+		InputStream is = null;
+		File inputFile = null;
+		try {
+			inputFile = new File(filePath);
+			is = new FileInputStream(inputFile);
+			SAXParserFactory factory = SAXParserFactory.newInstance();
+			SAXParser saxParser = factory.newSAXParser();
+			DefaultHandler handler = new DefaultHandler() {
+				boolean bid = false;
+
+				public void startElement(final String uri, final String localName, final String qName,
+						final Attributes attributes) throws SAXException {
+					if (qName.equalsIgnoreCase(Constante.rdf_RDF)) {
+						for (int i = 0; i < attributes.getLength(); i++) {
+							String name = attributes.getLocalName(i);
+							String val = attributes.getValue(i);
+							mapSnomed.put(name, val);
+						}
+					}
+					if (qName.equalsIgnoreCase(Constante.notation)) {
+						bid = true;
+					}
+				}
+
+				public void characters(char ch[], int start, int length) throws SAXException {
+					if (bid) {
+						String donnees = new String(ch, start, length);
+						list.add(donnees);
+						bid = false;
+					}
+				}
+
+				public void endElement(String uri, String localName, String qName) throws SAXException {
+
+					if (qName.equalsIgnoreCase(Constante.notation)) {
+						bid = false;
+					}
+
+				}
+
+			};
+			saxParser.parse(is, handler);
+
+		} catch (final Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (is != null) {
+				is.close();
+			}
+		}
+
+		return list;
 	}
 
 	/**
@@ -2172,7 +2890,7 @@ public class AddXmlNode extends Application {
 	 * @param xml
 	 * @throws Exception
 	 */
-	public static final void prettyPrint(final Document xml, final String path, final String dest) throws Exception {
+	public static final File prettyPrint(final Document xml, final String path, final String dest) throws Exception {
 		final Source source = new DOMSource(xml);
 		final File f = new File(path + Constante.termino);
 		if (!f.exists()) {
@@ -2188,6 +2906,7 @@ public class AddXmlNode extends Application {
 		xformer.setOutputProperty(OutputKeys.ENCODING, Constante.utf8);
 		xformer.setOutputProperty(OutputKeys.INDENT, Constante.yes);
 		xformer.transform(source, result);
+		return xmlFile;
 	}
 
 	/**
@@ -2230,12 +2949,14 @@ public class AddXmlNode extends Application {
 		dialogPane.setMinHeight(150);
 		dialogPane.setMaxHeight(150);
 		dialogPane.setPrefHeight(150);
-		alert.setContentText(Constante.alert9 + "\n" + file.getName());
+		alert.setContentText(Constante.alert9 + Constante.retourChariot + file.getName());
 		alert.setHeaderText(null);
 		alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
 		alert.showAndWait();
 		files = new ArrayList<File>();
 		filesB = new ArrayList<File>();
+		listF = new ArrayList<File>();
+		listFR = new ArrayList<File>();
 		finalFiles = new ArrayList<File>();
 		list.getItems().clear();
 		listB.getItems().clear();
@@ -2260,7 +2981,7 @@ public class AddXmlNode extends Application {
 			String line = br.readLine();
 			while (line != null) {
 				sb.append(line);
-				sb.append("\n");
+				sb.append(Constante.retourChariot);
 				line = br.readLine();
 			}
 			singleString = sb.toString();

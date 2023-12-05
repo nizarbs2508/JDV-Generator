@@ -96,10 +96,13 @@ public class CreateXMLFile {
 						Files.createDirectories(new File(out).toPath());
 					}
 					final StreamResult file = new StreamResult(new File(out + "\\" + name + ".xml"));
-					createdFile = new File(out + "\\" + name + ".xml");
-					// write data
-					transformer.transform(source, file);
-					isOk = true;
+					if (name.startsWith("JDV_")) {
+						createdFile = new File(out + "\\" + name + ".xml");
+						// write data
+						transformer.transform(source, file);
+						isOk = true;
+					}
+					
 				}
 			}
 		} catch (final Exception e) {

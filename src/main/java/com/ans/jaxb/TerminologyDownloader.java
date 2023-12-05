@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -22,9 +24,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
-import javafx.scene.control.Alert.AlertType;
 
 /**
  * TerminologyDownloader
@@ -32,17 +34,42 @@ import javafx.scene.control.Alert.AlertType;
  * @author bensalem Nizar
  */
 public class TerminologyDownloader {
+	/**
+	 * username
+	 */
 	private static String username = "";
+	/**
+	 * password
+	 */
 	private static String password = "";
+	/**
+	 * client_id
+	 */
 	private static final String client_id = Constante.clientId;
+	/**
+	 * client_secret
+	 */
 	private static final String client_secret = "";
+	/**
+	 * newFile
+	 */
 	private static File newFile = null;
+	/**
+	 * tokenurl
+	 */
 	private String tokenurl;
+	/**
+	 * downloadurl
+	 */
 	private String downloadurl;
+	/**
+	 * tokenopen
+	 */
 	private String tokenopen;
 
 	/**
 	 * main principale
+	 * 
 	 * @param textLogin
 	 * @param textPwd
 	 * @param listTerminology
@@ -51,9 +78,10 @@ public class TerminologyDownloader {
 	 * @param downloadurl
 	 * @param tokenopen
 	 * @return
+	 * @throws IOException
 	 */
 	public List<File> main(final String textLogin, final String textPwd, final List<String> listTerminology,
-			final Map<String, String> map, String tokenurl, String downloadurl, String tokenopen) {
+			final Map<String, String> map, final String tokenurl, final String downloadurl, final String tokenopen) {
 		this.tokenurl = tokenurl;
 		this.downloadurl = downloadurl;
 		this.tokenopen = tokenopen;
@@ -89,21 +117,23 @@ public class TerminologyDownloader {
 			if (latestVersion == null) {
 				System.out.println("No zip file available for " + str1.trim() + " or failed to extract RDF.");
 			} else {
-				final String localFilename = Constante.textFieldRDF + str1.trim() + "_" + latestVersion + ".zip";
+				final String localFilename = Constante.textFieldRDF + str1.trim() + "_" + latestVersion + Constante.extensionZip;
 				if (new File(localFilename).exists()) {
 					new File(localFilename).delete();
 				}
 
 				zipFilename = downloadZip(str1.trim(), latestVersion);
 				try {
-					final String str = new File(zipFilename).getName();
-					final int dotIndex = str.lastIndexOf('.');
-					filename = str.substring(0, dotIndex);
+					if (zipFilename != null) {
+						final String str = new File(zipFilename).getName();
+						final int dotIndex = str.lastIndexOf('.');
+						filename = str.substring(0, dotIndex);
 
-					final File file = unzipFile(new File(zipFilename).getAbsolutePath(),
-							new File(outputDir + filename));
-					findFile(file);
-					list.add(newFile);
+						final File file = unzipFile(new File(zipFilename).getAbsolutePath(),
+								new File(outputDir + filename));
+						findFile(file);
+						list.add(newFile);
+					}
 				} catch (final IOException e) {
 					e.printStackTrace();
 				}
@@ -114,15 +144,16 @@ public class TerminologyDownloader {
 
 	/**
 	 * findFile
+	 * 
 	 * @param file
 	 */
 	private static void findFile(final File file) {
 		final File[] list = file.listFiles();
 		if (list != null)
 			for (final File fil : list) {
-				if (fil.isDirectory() && fil.getName().equals("dat")) {
+				if (fil.isDirectory() && fil.getName().equals(Constante.dat)) {
 					findFile(fil);
-				} else if (fil.getName().endsWith(".rdf")) {
+				} else if (fil.getName().endsWith(Constante.extRdf)) {
 					newFile = fil;
 				}
 			}
@@ -130,6 +161,7 @@ public class TerminologyDownloader {
 
 	/**
 	 * getLatestVersionDetails
+	 * 
 	 * @param terminologyId
 	 * @return
 	 */
@@ -153,12 +185,12 @@ public class TerminologyDownloader {
 				if (!versions.isEmpty()) {
 					final Map<String, Object> latestVersion = versions.stream()
 							.max((v1, v2) -> LocalDateTime
-									.parse((String) v1.get("publishedDate"), DateTimeFormatter.ISO_DATE_TIME)
-									.compareTo(LocalDateTime.parse((String) v2.get("publishedDate"),
+									.parse((String) v1.get(Constante.publishedDate), DateTimeFormatter.ISO_DATE_TIME)
+									.compareTo(LocalDateTime.parse((String) v2.get(Constante.publishedDate),
 											DateTimeFormatter.ISO_DATE_TIME)))
 							.orElse(null);
 					if (latestVersion != null) {
-						return (String) latestVersion.get("versionInfo");
+						return (String) latestVersion.get(Constante.versionInfo);
 					}
 				}
 			} else {
@@ -173,16 +205,18 @@ public class TerminologyDownloader {
 
 	/**
 	 * downloadZip
+	 * 
 	 * @param terminologyId
 	 * @param version
 	 * @return
 	 */
 	private String downloadZip(final String terminologyId, final String version) {
 		final String token = getToken();
-		final String downloadUrl = this.downloadurl + terminologyId + "&version=" + version
-				+ "&licenceConsent=true&dataTransferConsent=true";
-		final String localFilename = Constante.textFieldRDF + terminologyId + "_" + version + ".zip";
 		try {
+			final String encodedVersion = URLEncoder.encode(version, StandardCharsets.UTF_8.toString());
+			final String downloadUrl = this.downloadurl + terminologyId + "&version=" + encodedVersion
+					+ "&licenceConsent=true&dataTransferConsent=true";
+			final String localFilename = Constante.textFieldRDF + terminologyId + "_" + version + ".zip";
 			final URL url = new URL(downloadUrl);
 			final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 			connection.setRequestMethod("GET");
@@ -204,6 +238,7 @@ public class TerminologyDownloader {
 
 	/**
 	 * unzipFile
+	 * 
 	 * @param fileZip
 	 * @param destDir
 	 * @return
@@ -224,7 +259,6 @@ public class TerminologyDownloader {
 						throw new IOException("Failed to create directory " + newFile);
 					}
 				} else {
-					// fix for Windows-created archives
 					final File parent = newFile.getParentFile();
 					if (!parent.isDirectory() && !parent.mkdirs()) {
 						throw new IOException("Failed to create directory " + parent);
@@ -249,6 +283,7 @@ public class TerminologyDownloader {
 
 	/**
 	 * getToken
+	 * 
 	 * @return
 	 */
 	private String getToken() {
@@ -286,6 +321,44 @@ public class TerminologyDownloader {
 				alert.setHeaderText(null);
 				alert.getDialogPane().lookupButton(ButtonType.OK).setVisible(true);
 				alert.showAndWait();
+			}
+		} catch (final IOException e) {
+			System.out.println("An error occurred while getting token: " + e.getMessage());
+		}
+		return null;
+	}
+
+	/**
+	 * gettoken
+	 * @param tokenopen
+	 * @param user
+	 * @param pwd
+	 * @return
+	 */
+	public String getFirstToken(final String tokenopen, final String user, final String pwd) {
+		final String tokenUrl = tokenopen;
+		final String data = "grant_type=password&username=" + user.trim() + "&password=" + pwd.trim() + "&client_id="
+				+ client_id + "&client_secret=" + client_secret;
+		try {
+			final URL url = new URL(tokenUrl);
+			final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+			connection.setRequestMethod("POST");
+			connection.setDoOutput(true);
+			connection.getOutputStream().write(data.getBytes());
+
+			int responseCode = connection.getResponseCode();
+			if (responseCode == HttpURLConnection.HTTP_OK) {
+				final InputStream inputStream = connection.getInputStream();
+				final byte[] responseBytes = inputStream.readAllBytes();
+				final String response = new String(responseBytes);
+				final ObjectMapper mapper = new ObjectMapper();
+				final Map<String, Object> responseJson = mapper.readValue(response,
+						new TypeReference<Map<String, Object>>() {
+						});
+
+				return (String) responseJson.get("access_token");
+			} else {
+				return null;
 			}
 		} catch (final IOException e) {
 			System.out.println("An error occurred while getting token: " + e.getMessage());

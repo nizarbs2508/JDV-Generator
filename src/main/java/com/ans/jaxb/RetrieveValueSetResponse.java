@@ -57,7 +57,7 @@ public class RetrieveValueSetResponse implements Serializable {
 	/**
 	 * @param valueSetOID the valueSetOID to set
 	 */
-	public void setValueSetOID(String valueSetOID) {
+	public void setValueSetOID(final String valueSetOID) {
 		this.valueSetOID = valueSetOID;
 	}
 
@@ -71,7 +71,7 @@ public class RetrieveValueSetResponse implements Serializable {
 	/**
 	 * @param valueSetName the valueSetName to set
 	 */
-	public void setValueSetName(String valueSetName) {
+	public void setValueSetName(final String valueSetName) {
 		this.valueSetName = valueSetName;
 	}
 
@@ -85,7 +85,7 @@ public class RetrieveValueSetResponse implements Serializable {
 	/**
 	 * @param code the code to set
 	 */
-	public void setCode(String code) {
+	public void setCode(final String code) {
 		this.code = code;
 	}
 
@@ -99,7 +99,7 @@ public class RetrieveValueSetResponse implements Serializable {
 	/**
 	 * @param displayName the displayName to set
 	 */
-	public void setDisplayName(String displayName) {
+	public void setDisplayName(final String displayName) {
 		this.displayName = displayName;
 	}
 
@@ -113,7 +113,7 @@ public class RetrieveValueSetResponse implements Serializable {
 	/**
 	 * @param codeSystemName the codeSystemName to set
 	 */
-	public void setCodeSystemName(String codeSystemName) {
+	public void setCodeSystemName(final String codeSystemName) {
 		this.codeSystemName = codeSystemName;
 	}
 
@@ -127,7 +127,7 @@ public class RetrieveValueSetResponse implements Serializable {
 	/**
 	 * @param codeSystem the codeSystem to set
 	 */
-	public void setCodeSystem(String codeSystem) {
+	public void setCodeSystem(final String codeSystem) {
 		this.codeSystem = codeSystem;
 	}
 
@@ -141,7 +141,7 @@ public class RetrieveValueSetResponse implements Serializable {
 	/**
 	 * @param dateDebut the dateDebut to set
 	 */
-	public void setDateDebut(String dateDebut) {
+	public void setDateDebut(final String dateDebut) {
 		this.dateDebut = dateDebut;
 	}
 
@@ -155,7 +155,7 @@ public class RetrieveValueSetResponse implements Serializable {
 	/**
 	 * @param dateFin the dateFin to set
 	 */
-	public void setDateFin(String dateFin) {
+	public void setDateFin(final String dateFin) {
 		this.dateFin = dateFin;
 	}
 
@@ -186,10 +186,4 @@ public class RetrieveValueSetResponse implements Serializable {
 				+ code + ", displayName=" + displayName + ", codeSystemName=" + codeSystemName + ", codeSystem="
 				+ codeSystem + ", dateDebut=" + dateDebut + ", dateFin=" + dateFin + "]";
 	}
-
-
-
-	
-	
-
 }
