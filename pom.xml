@@ -228,7 +228,7 @@
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-graphics</artifactId>
-			<version>20</version>
+			<version>20.0.2</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.openjfx/javafx-media -->
 		<dependency>
